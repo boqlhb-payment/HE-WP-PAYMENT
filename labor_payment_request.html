@@ -1,0 +1,3630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Labor Payment Request System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f1eb;--surface:#fff;--surface2:#faf8f4;
+    --border:#e0dbd0;--accent:#c8410a;--accent2:#1a3a5c;
+    --accent3:#2e7d52;--warn:#c0892a;--danger:#c0392b;
+    --purple:#6b3fa0;
+    --text:#1c1a17;--muted:#7a7568;--radius:10px;
+    --shadow:0 2px 16px rgba(0,0,0,.07);--gold:#f0b452;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+  #loading-overlay{display:none;position:fixed;inset:0;background:rgba(26,58,92,.82);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+  #loading-overlay.show{display:flex;}
+  .spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;}
+  .loading-msg{color:#fff;font-size:.95rem;font-weight:500;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0f2540 0%,#1a3a5c 60%,#22507a 100%);}
+  .login-box{background:#fff;border-radius:16px;padding:48px 40px 40px;max-width:420px;width:90%;box-shadow:0 16px 60px rgba(0,0,0,.28);animation:fadeIn .3s ease;}
+  .login-logo{font-family:'DM Serif Display',serif;font-size:1.6rem;color:var(--accent2);text-align:center;margin-bottom:4px;}
+  .login-logo span{color:var(--accent);}
+  .login-sub{text-align:center;color:var(--muted);font-size:.84rem;margin-bottom:20px;}
+  .setup-note{background:#fff8e1;border:1px solid #f0d080;border-radius:8px;padding:10px 14px;font-size:.78rem;color:#7a5c00;margin-bottom:16px;line-height:1.6;}
+  .setup-note strong{display:block;margin-bottom:3px;}
+  .setup-note code{background:#f0e5a0;padding:1px 5px;border-radius:3px;font-family:monospace;}
+  .login-role-tabs{display:flex;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px;}
+  .login-role-tab{flex:1;padding:9px 0;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;border:none;background:transparent;cursor:pointer;color:var(--muted);transition:all .16s;}
+  .login-role-tab.active{background:var(--accent2);color:#fff;}
+  .login-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+  .login-field label{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .login-field input,.login-field select{height:42px;padding:0 14px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.95rem;background:var(--surface2);transition:border .15s;}
+  .login-field input:focus,.login-field select:focus{outline:none;border-color:var(--accent2);background:#fff;}
+  .login-err{font-size:.82rem;color:var(--danger);text-align:center;min-height:18px;margin-bottom:4px;}
+  .login-btn{margin-top:6px;height:44px;border-radius:8px;border:none;background:var(--accent2);color:#fff;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .16s;width:100%;}
+  .login-btn:hover{background:#16334f;}
+  .login-btn:disabled{background:#aaa;cursor:not-allowed;}
+
+  #app{display:none;}
+  nav{background:var(--accent2);color:#fff;display:flex;align-items:center;padding:0 18px;height:58px;box-shadow:0 2px 8px rgba(0,0,0,.12);position:sticky;top:0;z-index:100;gap:0;}
+  .nav-brand{font-family:'DM Serif Display',serif;font-size:1.1rem;color:#fff;margin-right:16px;white-space:nowrap;}
+  .nav-brand span{color:var(--gold);}
+  .nav-tabs{display:flex;gap:1px;flex:1;overflow-x:auto;}
+  .nav-tab{background:none;border:none;color:rgba(255,255,255,.72);font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;padding:0 12px;height:58px;cursor:pointer;border-bottom:3px solid transparent;transition:all .18s;white-space:nowrap;}
+  .nav-tab:hover{color:#fff;background:rgba(255,255,255,.07);}
+  .nav-tab.active{color:#fff;border-bottom-color:var(--gold);background:rgba(255,255,255,.08);}
+  .nav-user{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:.8rem;color:rgba(255,255,255,.85);white-space:nowrap;padding-left:8px;}
+  .role-badge{background:var(--gold);color:#1a3a5c;border-radius:20px;padding:2px 8px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+  .role-badge.eng{background:#4a9eca;color:#fff;}
+  .role-badge.finance{background:#1a7a5e;color:#fff;}
+  .role-badge.labor{background:#7a5c00;color:#fff;}
+  .nav-btn{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:6px;padding:0 8px;height:26px;font-size:.76rem;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;transition:background .15s;}
+  .nav-btn:hover{background:rgba(255,255,255,.22);}
+
+  .page{display:none;padding:28px;max-width:1400px;margin:0 auto;}
+  .page.active{display:block;animation:fadeIn .22s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .page-header{margin-bottom:20px;}
+  .page-header h1{font-family:'DM Serif Display',serif;font-size:1.7rem;color:var(--accent2);}
+  .page-header p{color:var(--muted);font-size:.9rem;margin-top:4px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:18px;}
+  .card-title{font-family:'DM Serif Display',serif;font-size:1.05rem;color:var(--accent2);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+  .pm-only{transition:opacity .2s;}
+  body.role-engineer .pm-only{display:none!important;}
+  .finance-only{} /* shown by default */
+  body.role-pm       .finance-only{display:none!important;}
+  body.role-engineer .finance-only{display:none!important;}
+  body.role-labor    .finance-only{display:none!important;}
+  .labor-only{}
+  body.role-pm       .labor-only{display:none!important;}
+  body.role-engineer .labor-only{display:none!important;}
+  body.role-finance  .labor-only{display:none!important;}
+  /* Finance & Labor only see their own pages — hide PM pages */
+  body.role-finance  .pm-only{display:none!important;}
+  body.role-labor    .pm-only{display:none!important;}
+  .ro-banner{display:none;background:#fff8e1;border:1px solid #f0d080;border-radius:8px;padding:10px 16px;font-size:.84rem;color:#7a5c00;margin-bottom:16px;align-items:center;gap:8px;}
+  body.role-engineer .ro-banner{display:flex;}
+  body.role-finance  .ro-banner{display:flex;}
+  body.role-labor    .ro-banner{display:flex;}
+
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+  .form-group{display:flex;flex-direction:column;gap:4px;}
+  .form-group label{font-size:.77rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .form-group input,.form-group select{height:36px;padding:0 10px;border:1px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--text);background:var(--surface2);transition:border .15s;}
+  .form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent2);background:#fff;}
+  .form-group input[readonly]{background:#efefef;color:var(--muted);cursor:not-allowed;}
+  .hint{font-size:.71rem;color:var(--muted);font-style:italic;}
+
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:0 18px;height:36px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.86rem;font-weight:600;cursor:pointer;border:none;transition:all .16s;}
+  .btn-primary{background:var(--accent2);color:#fff;}.btn-primary:hover{background:#16334f;}
+  .btn-accent{background:var(--accent);color:#fff;}.btn-accent:hover{background:#a83508;}
+  .btn-green{background:var(--accent3);color:#fff;}.btn-green:hover{background:#256642;}
+  .btn-purple{background:var(--purple);color:#fff;}.btn-purple:hover{background:#532d80;}
+  .btn-sm{height:28px;padding:0 10px;font-size:.79rem;}
+  .btn-outline{background:transparent;border:1.5px solid var(--accent2);color:var(--accent2);}.btn-outline:hover{background:var(--accent2);color:#fff;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .form-actions{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;}
+
+  .table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;font-size:.84rem;}
+  thead th{background:var(--accent2);color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+  thead th.th-retention{background:#5b2d8a;}
+  thead th.th-paid{background:#1a6636;}
+  tbody tr{border-bottom:1px solid var(--border);}
+  tbody tr:last-child{border-bottom:none;}
+  tbody tr:hover{background:var(--surface2);}
+  tbody td{padding:9px 12px;vertical-align:middle;white-space:nowrap;}
+  td.td-retention{background:#f5f0ff;}
+  td.td-paid{background:#f0fbf4;}
+
+  .status-select{padding:3px 8px;border-radius:5px;border:1px solid var(--border);font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;}
+  .status-select.review  {background:#fef3cd;color:#856404;}
+  .status-select.approved{background:#d1f0e0;color:#1a6636;}
+  .status-select.rejected{background:#fde8e8;color:#9b1c1c;}
+  .status-select.paid    {background:#d1f0e0;color:#1a6636;font-weight:700;}
+
+  .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.73rem;font-weight:700;text-transform:uppercase;}
+  .badge-review  {background:#fef3cd;color:#856404;}
+  .badge-approved{background:#d1f0e0;color:#1a6636;}
+  .badge-rejected{background:#fde8e8;color:#9b1c1c;}
+  .badge-eligible{background:#ede0ff;color:#5b2d8a;}
+  .badge-pending {background:#e8f0f8;color:#1a3a5c;}
+
+  .eng-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;}
+  .eng-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;transition:transform .14s,box-shadow .14s;}
+  .eng-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.10);}
+  .eng-name{font-family:'DM Serif Display',serif;font-size:1.05rem;color:var(--accent2);}
+  .eng-meta{font-size:.81rem;color:var(--muted);}
+  .eng-meta span{display:block;margin-bottom:2px;}
+  .eng-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;}
+  .eng-tag{background:#e8f0f8;color:var(--accent2);border-radius:4px;padding:2px 7px;font-size:.72rem;font-weight:600;}
+
+  .amount-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px;}
+  .amount-mini{border:1px solid var(--border);border-radius:8px;padding:12px 14px;background:var(--surface2);}
+  .amount-mini .alabel{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;}
+  .amount-mini .avalue{font-size:1.05rem;font-weight:700;margin-top:3px;color:var(--text);}
+  .amount-mini.green .avalue{color:var(--accent3);}
+  .amount-mini.orange .avalue{color:var(--warn);}
+  .amount-mini.purple .avalue{color:var(--purple);}
+  .amount-mini.red .avalue{color:var(--danger);}
+
+  .breadcrumb{font-size:.81rem;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:6px;}
+  .breadcrumb a{color:var(--accent2);cursor:pointer;text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+  .empty{text-align:center;padding:36px 20px;color:var(--muted);}
+  .empty-icon{font-size:2rem;margin-bottom:8px;}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.40);z-index:500;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border-radius:12px;padding:26px;max-width:480px;width:92%;box-shadow:0 8px 40px rgba(0,0,0,.2);animation:fadeIn .18s ease;}
+  .modal-title{font-family:'DM Serif Display',serif;font-size:1.15rem;color:var(--accent2);margin-bottom:12px;}
+  .modal-actions{margin-top:18px;display:flex;gap:8px;justify-content:flex-end;}
+  .pw-field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+  .pw-field label{font-size:.77rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .pw-field input{height:36px;padding:0 10px;border:1.5px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.88rem;}
+  .pw-field input:focus{outline:none;border-color:var(--accent2);}
+  .pw-err{font-size:.8rem;color:var(--danger);min-height:15px;margin-bottom:4px;}
+
+  /* Retention claim eligibility row */
+  .eligible-row{background:#f8f0ff!important;}
+  .eligible-row td{border-left:3px solid var(--purple);}
+
+  .sync-bar{position:fixed;bottom:0;left:0;right:0;height:30px;background:var(--accent2);color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:.76rem;gap:8px;z-index:200;}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:#4cde80;}
+  .sync-dot.syncing{background:var(--gold);animation:pulse 1s infinite;}
+  .sync-dot.error{background:var(--danger);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+  .toast-container{position:fixed;bottom:40px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;}
+  .toast{background:var(--accent2);color:#fff;border-radius:8px;padding:10px 18px;font-size:.86rem;box-shadow:0 4px 16px rgba(0,0,0,.18);animation:slideUp .2s ease;}
+  .toast.success{background:var(--accent3);}
+  .toast.error{background:var(--danger);}
+  @keyframes slideUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+
+  /* ── PHOTO UPLOAD ── */
+  .photo-upload-area{margin-top:18px;padding-top:16px;border-top:1px solid var(--border);}
+  .photo-upload-label{font-size:.82rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .photo-grid{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 0;}
+  .photo-thumb{
+    width:100px;height:80px;border-radius:7px;overflow:hidden;border:2px solid var(--border);
+    position:relative;cursor:pointer;background:#f0f0f0;flex-shrink:0;
+    transition:border-color .15s,transform .12s;
+  }
+  .photo-thumb:hover{border-color:var(--accent2);transform:scale(1.04);}
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;}
+  .photo-thumb-del{
+    position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;
+    background:rgba(200,65,10,.88);color:#fff;border:none;font-size:.72rem;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;
+  }
+  .photo-thumb-del:hover{background:var(--danger);}
+  .photo-add-btn{
+    width:100px;height:80px;border-radius:7px;border:2px dashed var(--border);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--muted);font-size:.75rem;gap:4px;background:var(--surface2);
+    transition:border-color .15s,background .15s;
+  }
+  .photo-add-btn:hover{border-color:var(--accent2);background:#eef4ff;color:var(--accent2);}
+  .photo-upload-progress{
+    margin-top:8px;height:6px;border-radius:3px;background:var(--border);overflow:hidden;display:none;
+  }
+  .photo-upload-progress-bar{height:100%;background:var(--accent2);border-radius:3px;transition:width .3s;}
+  /* Viewer modal */
+  .photo-viewer-img{max-width:100%;max-height:460px;object-fit:contain;border-radius:6px;cursor:pointer;}
+  .photo-viewer-thumb{
+    width:72px;height:58px;border-radius:6px;overflow:hidden;border:2px solid transparent;
+    cursor:pointer;flex-shrink:0;transition:border-color .15s;
+  }
+  .photo-viewer-thumb.active{border-color:var(--gold);}
+  .photo-viewer-thumb img{width:100%;height:100%;object-fit:cover;}
+
+  .fw-600{font-weight:600;}
+  .color-green{color:var(--accent3);}
+  .color-orange{color:var(--warn);}
+  .color-red{color:var(--danger);}
+  .color-purple{color:var(--purple);}
+
+  /* PM Review page filters */
+  .filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;}
+  .filter-bar .form-group{min-width:160px;}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-msg" id="loading-msg">Connecting to Google Sheets…</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Labor<span>Pay</span> System</div>
+    <div class="login-sub">Labor Payment Request Management</div>
+    <div class="setup-note" id="setup-note" style="display:none">
+      <strong>⚙️ Setup Required</strong>
+      Open this file in a text editor and replace:<br>
+      <code>const API_URL = 'YOUR_WEB_APP_URL_HERE';</code>
+    </div>
+    <div class="login-role-tabs" style="flex-wrap:wrap;">
+      <button class="login-role-tab active" id="tab-pm-role"      onclick="switchLoginRole('pm')">🏢 PM</button>
+      <button class="login-role-tab"        id="tab-eng-role"     onclick="switchLoginRole('engineer')">👷 Engineer</button>
+      <button class="login-role-tab"        id="tab-finance-role" onclick="switchLoginRole('finance')">💼 Finance</button>
+      <button class="login-role-tab"        id="tab-labor-role"   onclick="switchLoginRole('labor')">🔨 Labor</button>
+    </div>
+    <div id="login-pm-fields">
+      <div class="login-field"><label>Username</label><input type="text" id="pm-username" placeholder="admin" autocomplete="off"></div>
+      <div class="login-field"><label>Password</label><input type="password" id="pm-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    </div>
+    <div id="login-eng-fields" style="display:none">
+      <div class="login-field"><label>Select Your Name</label><select id="eng-select"><option value="">-- Select Engineer --</option></select></div>
+      <div class="login-field"><label>Password</label><input type="password" id="eng-password" placeholder="Default: 1234" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    </div>
+    <div id="login-finance-fields" style="display:none">
+      <div class="login-field"><label>Username</label><input type="text" id="finance-username" placeholder="finance" autocomplete="off"></div>
+      <div class="login-field"><label>Password</label><input type="password" id="finance-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    </div>
+    <div id="login-labor-fields" style="display:none">
+      <div class="login-field"><label>Select Your Name</label><select id="labor-select"><option value="">-- Select Labor --</option></select></div>
+      <div class="login-field"><label>Password</label><input type="password" id="labor-password" placeholder="Default: 1234" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In →</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<nav>
+  <div class="nav-brand">Labor<span>Pay</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="navtab-pm"       onclick="showPage('project-master')">📋 Project Master</button>
+    <button class="nav-tab"        id="navtab-lm"       onclick="showPage('labor-master')">👷 Labor Master</button>
+    <button class="nav-tab"        id="navtab-req"      onclick="showPage('requester')">🏗️ Requester</button>
+    <button class="nav-tab pm-only" id="navtab-review"  onclick="showPage('pm-review')">🔍 PM Review</button>
+    <button class="nav-tab"        id="tab-payment"     style="display:none" onclick="showPage('payment')">📝 Payment Request</button>
+    <button class="nav-tab"        id="tab-retention"   style="display:none" onclick="showPage('retention')">💰 Retention Claim</button>
+    <button class="nav-tab finance-only" id="navtab-finance" style="display:none" onclick="showPage('finance')">💼 Finance</button>
+    <button class="nav-tab labor-only"   id="navtab-labor"   style="display:none" onclick="showPage('labor-portal')">🔨 My Payments</button>
+  </div>
+  <div class="nav-user">
+    <span id="nav-role-badge" class="role-badge">PM</span>
+    <span id="nav-username-display"></span>
+    <button class="nav-btn" onclick="reloadData()">🔄</button>
+    <button class="nav-btn" onclick="openChangePw()">🔑</button>
+    <button class="nav-btn" onclick="logout()">Logout</button>
+  </div>
+</nav>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ════════════ PAGE 1: PROJECT MASTER ════════════ -->
+<div class="page active" id="page-project-master">
+  <div class="page-header"><h1>Project Master List</h1><p>Manage all project records. Engineer sourced from Requester. Worker sourced from Labor Master.</p></div>
+  <div class="ro-banner">🔒 View-only mode — only the Project Manager can add or delete entries.</div>
+  <div class="card pm-only">
+    <div class="card-title">➕ Add New Project Entry</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Project Name</label><input type="text" id="pm-project" placeholder="e.g. Taman Maju Phase 1"></div>
+      <div class="form-group"><label>Scope / Block</label><input type="text" id="pm-scope" placeholder="e.g. Block A"></div>
+      <div class="form-group"><label>Work Type</label><input type="text" id="pm-worktype" placeholder="e.g. Plastering"><span class="hint">Free text</span></div>
+      <div class="form-group"><label>House No / Floor</label><input type="text" id="pm-houseno" placeholder="e.g. Lot 1-10"></div>
+      <div class="form-group"><label>Labor Contract Amt (USD)</label><input type="number" id="pm-contract" placeholder="0.00" min="0"></div>
+      <div class="form-group"><label>Retention (%)</label><input type="number" id="pm-retention" placeholder="e.g. 5" min="0" max="100"><span class="hint">% of each claim</span></div>
+      <div class="form-group"><label>Engineer in Charge</label><select id="pm-engineer"><option value="">-- Select Engineer --</option></select></div>
+      <div class="form-group"><label>Worker Name</label><select id="pm-worker"><option value="">-- Select Worker --</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btn-add-project" onclick="addProjectEntry()">Add Entry</button>
+      <button class="btn btn-outline" onclick="clearPMForm()">Clear</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      📋 Project Entries
+      <span id="pm-filter-count" style="font-size:.78rem;font-weight:400;color:var(--muted);margin-left:8px;"></span>
+      <button class="btn btn-outline btn-sm" style="margin-left:auto;" onclick="clearPMFilters()">✕ Clear Filters</button>
+    </div>
+    <!-- FILTER BAR — cascading: Project → Scope → WorkType/Engineer → Worker -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+      <div class="form-group">
+        <label>Project</label>
+        <!-- Changing Project clears Scope, WorkType, Engineer, Worker downstream -->
+        <select id="f-project" onchange="clearDownstream(['f-scope','f-worktype','f-engineer','f-worker']);applyPMFilters()"><option value="">All Projects</option></select>
+      </div>
+      <div class="form-group">
+        <label>Scope / Block</label>
+        <!-- Changing Scope clears WorkType, Engineer, Worker downstream -->
+        <select id="f-scope" onchange="clearDownstream(['f-worktype','f-engineer','f-worker']);applyPMFilters()"><option value="">All Scopes</option></select>
+        <span class="hint">Based on Project</span>
+      </div>
+      <div class="form-group">
+        <label>Work Type</label>
+        <!-- Changing WorkType clears Worker downstream -->
+        <select id="f-worktype" onchange="clearDownstream(['f-worker']);applyPMFilters()"><option value="">All Work Types</option></select>
+        <span class="hint">Based on Project + Scope</span>
+      </div>
+      <div class="form-group">
+        <label>Engineer</label>
+        <select id="f-engineer" onchange="applyPMFilters()"><option value="">All Engineers</option></select>
+        <span class="hint">Based on Project + Scope</span>
+      </div>
+      <div class="form-group">
+        <label>Worker</label>
+        <select id="f-worker" onchange="applyPMFilters()"><option value="">All Workers</option></select>
+        <span class="hint">Based on Project + Scope + Work Type</span>
+      </div>
+      <div class="form-group">
+        <label>Search (any field)</label>
+        <input type="text" id="f-search" placeholder="Type to search…" oninput="applyPMFilters()">
+      </div>
+    </div>
+    <!-- SUMMARY CARDS — updated whenever filters change -->
+    <div id="pm-summary-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:14px;">
+      <div class="amount-mini">
+        <div class="alabel">Total Contract</div>
+        <div class="avalue" id="sum-pm-contract">$ 0.00</div>
+      </div>
+      <div class="amount-mini orange">
+        <div class="alabel">Paid to Labor</div>
+        <div class="avalue" id="sum-pm-paid">$ 0.00</div>
+      </div>
+      <div class="amount-mini green">
+        <div class="alabel">Balance (Contract − Paid)</div>
+        <div class="avalue" id="sum-pm-balance">$ 0.00</div>
+      </div>
+      <div class="amount-mini purple">
+        <div class="alabel">Retention Held</div>
+        <div class="avalue" id="sum-pm-retention">$ 0.00</div>
+      </div>
+    </div>
+
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>#</th><th>Project</th><th>Scope/Block</th><th>Work Type</th><th>House No/Floor</th>
+        <th>Contract (USD)</th><th>Retention %</th><th>Engineer</th><th>Worker</th>
+        <th>Requested (USD)</th><th>Contract Remaining (USD)</th><th>Retention Sum (USD)</th>
+        <th class="pm-only">Action</th>
+      </tr></thead>
+      <tbody id="pm-table-body"><tr><td colspan="13"><div class="empty"><div class="empty-icon">📭</div>No entries yet.</div></td></tr></tbody>
+      <tfoot id="pm-table-foot" style="display:none;">
+        <tr style="background:var(--accent2);color:#fff;font-weight:700;font-size:.82rem;">
+          <td colspan="5" style="padding:9px 12px;text-align:right;letter-spacing:.03em;">FILTERED TOTALS</td>
+          <td id="foot-contract"  style="padding:9px 12px;"></td>
+          <td style="padding:9px 12px;"></td>
+          <td colspan="2" style="padding:9px 12px;"></td>
+          <td id="foot-paid"      style="padding:9px 12px;"></td>
+          <td id="foot-balance"   style="padding:9px 12px;"></td>
+          <td id="foot-retention" style="padding:9px 12px;"></td>
+          <td class="pm-only" style="padding:9px 12px;"></td>
+        </tr>
+      </tfoot>
+    </table></div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE 2: LABOR MASTER ════════════ -->
+<div class="page" id="page-labor-master">
+  <div class="page-header"><h1>Labor Master List</h1><p>Register workers and manage approval payment summaries (AP).</p></div>
+  <div class="ro-banner">🔒 View-only — only the Project Manager can register or remove labor.</div>
+  <div class="card pm-only">
+    <div class="card-title">➕ Register Labor</div>
+    <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));">
+      <div class="form-group"><label>Labor Name</label><input type="text" id="lm-name" placeholder="e.g. Ahmad Bin Zaini"></div>
+      <div class="form-group"><label>Phone Number</label><input type="text" id="lm-phone" placeholder="e.g. 012-3456789"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btn-add-labor" onclick="addLaborEntry()">Register Labor</button>
+      <button class="btn btn-outline" onclick="clearLMForm()">Clear</button>
+    </div>
+    <p style="font-size:.78rem;color:var(--muted);margin-top:10px;">💡 A labor login is automatically created with default password <strong>1234</strong>.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">👷 Labor Records</div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>#</th><th>Labor Name</th><th>Phone</th><th>Project(s)</th><th>Scope/Block</th><th>Work Type(s)</th>
+        <th>Contract (USD)</th>
+        <th class="th-paid">To Be Paid (USD)</th>
+        <th style="background:#1a5c3a">Paid (USD)</th>
+        <th>Balance (USD)</th>
+        <th class="pm-only">Action</th>
+      </tr></thead>
+      <tbody id="lm-table-body"><tr><td colspan="11"><div class="empty"><div class="empty-icon">📭</div>No records yet.</div></td></tr></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      📑 Approval Payment Summaries (AP)
+      <span style="font-size:.8rem;font-weight:400;color:var(--muted);margin-left:8px;">Semi-monthly payment batches</span>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>#</th><th>AP Number</th><th>Date Created</th><th>Created By</th>
+        <th class="th-paid">Total Net Pay (USD)</th>
+        <th>Status</th><th>Action</th>
+      </tr></thead>
+      <tbody id="ap-list-body"><tr><td colspan="7"><div class="empty"><div class="empty-icon">📑</div>No approval summaries yet. Create one from PM Review.</div></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE 3: REQUESTER ════════════ -->
+<div class="page" id="page-requester">
+  <div class="page-header"><h1>Requester</h1><p>Register engineers here. Project assignments are managed in the Project Master List.</p></div>
+  <div class="ro-banner">🔒 Adding/removing engineers restricted to Project Manager.</div>
+  <div class="card pm-only">
+    <div class="card-title">➕ Add Engineer</div>
+    <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));">
+      <div class="form-group">
+        <label>Engineer Name</label>
+        <input type="text" id="req-name" placeholder="e.g. Eng. Lim Wei">
+        <span class="hint">Project &amp; scope assigned via Project Master List</span>
+      </div>
+    </div>
+    <div class="form-actions"><button class="btn btn-primary" id="btn-add-engineer" onclick="addEngineer()">Add Engineer</button></div>
+  </div>
+  <div class="card pm-only">
+    <div class="card-title">💼 Add Finance User</div>
+    <div class="form-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));">
+      <div class="form-group"><label>Username</label><input type="text" id="req-finance-name" placeholder="e.g. finance1"></div>
+      <div class="form-group"><label>Initial Password</label><input type="text" id="req-finance-pass" placeholder="e.g. finance123"></div>
+    </div>
+    <div class="form-actions"><button class="btn btn-primary" id="btn-add-finance" onclick="addFinanceUser()">Add Finance User</button></div>
+  </div>
+  <div id="eng-grid" class="eng-grid"></div>
+  <div id="eng-empty" class="empty"><div class="empty-icon">🧑‍💼</div><p>No engineers added yet.</p></div>
+</div>
+
+<!-- ════════════ PAGE 4: PM REVIEW (PM only) ════════════ -->
+<div class="page pm-only" id="page-pm-review">
+  <div class="page-header"><h1>PM Review</h1><p>Payment requests in <strong>Review</strong> or <strong>Approved</strong> status from the last 15 days. Set <strong>Approved</strong> → <strong>Paid</strong> to record payment to labor.</p></div>
+  <div class="card">
+    <div class="card-title">
+      🔍 Pending Review Requests
+      <button class="btn btn-green btn-sm" onclick="createApproval()">📑 Create AP from Approved</button>
+      <button class="btn btn-green btn-sm" style="margin-left:4px" onclick="downloadReviewExcel()">⬇️ Download Excel</button>
+      <button class="btn btn-sm" style="margin-left:4px;background:#7a3a00;color:#fff" onclick="runFixSheet()" title="Fix column order in Payments sheet if you see Row not found errors">🔧 Fix Sheet</button>
+    </div>
+    <div class="table-wrap"><table id="review-table">
+      <thead><tr>
+        <th>#</th><th>Engineer</th><th>Date</th><th>Project</th><th>Scope/Block</th><th>Work Type</th>
+        <th>House No</th><th>Worker</th><th>Contract (USD)</th><th>Request Amt (USD)</th>
+        <th class="th-retention">Retention (USD)</th>
+        <th style="background:#7a3a00;">Material Cut (USD)</th>
+        <th class="th-paid">Net Pay (USD)</th>
+        <th>Photos</th><th>Action</th>
+      </tr></thead>
+      <tbody id="review-table-body"><tr><td colspan="15"><div class="empty"><div class="empty-icon">📋</div>No pending reviews.</div></td></tr></tbody>
+    </table></div>
+  </div>
+
+  <!-- RETENTION CLAIMS — all engineers' claims visible to PM -->
+  <div class="card" style="margin-top:20px">
+    <div class="card-title">
+      💰 Retention Claims
+      <span id="ret-claim-count" style="font-size:.78rem;font-weight:400;color:var(--muted);margin-left:8px;"></span>
+      <button class="btn btn-green btn-sm" style="margin-left:auto" onclick="createRetentionAP()">📑 Create AP from Approved Retention</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>#</th><th>Engineer</th><th>Date</th><th>Project</th><th>Scope/Block</th>
+        <th>Work Type</th><th>House No</th><th>Worker</th>
+        <th class="th-retention">Retention Amt (USD)</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody id="pm-retention-body">
+        <tr><td colspan="10"><div class="empty"><div class="empty-icon">💰</div>No retention claims yet.</div></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE 5: PAYMENT REQUEST ════════════ -->
+<div class="page" id="page-payment">
+  <div class="breadcrumb"><a onclick="showPage('requester')">← Requester</a> / <span id="payment-eng-name-breadcrumb">Payment Request</span></div>
+  <div class="page-header">
+    <h1 id="payment-page-title">Payment Request</h1>
+    <p>Select project → scope → work type → house no, or use <strong>Bulk Request</strong> to submit multiple at once.</p>
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" id="btn-mode-single" onclick="setPRMode('single')" style="padding:7px 16px">📝 Single Request</button>
+      <button class="btn btn-outline btn-sm" id="btn-mode-bulk"   onclick="setPRMode('bulk')"   style="padding:7px 16px">⚡ Bulk Request</button>
+    </div>
+  </div>
+
+  <!-- BULK REQUEST CARD -->
+  <div class="card" id="bulk-request-card" style="display:none">
+    <div class="card-title">
+      ⚡ Bulk Payment Request
+      <span style="font-size:.78rem;font-weight:400;color:var(--muted);margin-left:8px">Fill amounts for multiple scopes and submit all at once</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;align-items:end;margin-bottom:16px">
+      <div class="form-group" style="margin:0">
+        <label>Request Date</label>
+        <input type="date" id="bulk-date"
+          style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-family:inherit">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Project</label>
+        <select id="bulk-project-filter" onchange="onBulkProjectChange()"
+          style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-family:inherit">
+          <option value="">All Projects</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Scope / Block</label>
+        <select id="bulk-scope-filter" onchange="onBulkScopeChange()"
+          style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-family:inherit">
+          <option value="">All Scopes</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>Work Type</label>
+        <select id="bulk-worktype-filter" onchange="onBulkWorktypeChange()"
+          style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-family:inherit">
+          <option value="">All Work Types</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label>House No</label>
+        <select id="bulk-houseno-filter" onchange="renderBulkTable()"
+          style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-family:inherit">
+          <option value="">All House Nos</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:2px">
+        <button class="btn btn-outline btn-sm" onclick="bulkFillPercent()"
+          style="padding:7px 12px;white-space:nowrap;font-size:.78rem"
+          title="Fill all empty amounts with remaining balance">📊 Fill All</button>
+        <button class="btn btn-outline btn-sm" onclick="bulkClearFilters()"
+          style="padding:7px 12px;white-space:nowrap;font-size:.78rem">✕ Clear</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="bulk-table">
+        <thead><tr>
+          <th style="width:36px"><input type="checkbox" id="bulk-check-all" onchange="bulkToggleAll(this)" title="Select all"></th>
+          <th>Project</th><th>Scope/Block</th><th>Work Type</th><th>House No</th><th>Worker</th>
+          <th>Contract (USD)</th><th>Claimed (USD)</th><th>Remaining (USD)</th>
+          <th style="background:#c8922a;color:#fff;min-width:130px">Request Amt (USD)</th>
+          <th>Retention</th><th class="th-paid">Net Pay</th>
+        </tr></thead>
+        <tbody id="bulk-table-body"></tbody>
+      </table>
+    </div>
+    <div id="bulk-summary" style="display:flex;gap:16px;flex-wrap:wrap;margin:14px 0;font-size:.83rem">
+      <span>Selected: <strong id="bulk-selected-count">0</strong></span>
+      <span>Total Request: <strong id="bulk-total-request" class="color-orange">$ 0.00</strong></span>
+      <span>Total Net Pay: <strong id="bulk-total-net" class="color-green">$ 0.00</strong></span>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" id="btn-bulk-submit" onclick="submitBulkRequests()">⚡ Submit Selected Requests</button>
+      <button class="btn btn-outline" onclick="renderBulkTable()">↻ Reset</button>
+    </div>
+    <div id="bulk-progress" style="display:none;margin-top:12px">
+      <div style="background:var(--border);border-radius:4px;height:8px;overflow:hidden">
+        <div id="bulk-progress-bar" style="height:100%;background:var(--accent3);width:0%;transition:width .3s"></div>
+      </div>
+      <div id="bulk-progress-text" style="font-size:.78rem;color:var(--muted);margin-top:6px"></div>
+    </div>
+  </div>
+
+  <div class="card" id="single-request-card">
+    <div class="card-title">📝 New Payment Request</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Request Date</label><input type="date" id="pr-date"></div>
+      <div class="form-group">
+        <label>Project Name</label>
+        <select id="pr-project" onchange="onPRProjectChange()"><option value="">-- Select Project --</option></select>
+        <span class="hint">Your assigned projects</span>
+      </div>
+      <div class="form-group">
+        <label>Scope / Block</label>
+        <select id="pr-scope" onchange="onPRScopeChange()"><option value="">-- Select Scope/Block --</option></select>
+        <span class="hint">Based on project</span>
+      </div>
+      <div class="form-group">
+        <label>Work Type</label>
+        <select id="pr-worktype" onchange="onPRWorktypeChange()"><option value="">-- Select Work Type --</option></select>
+        <span class="hint">Based on project &amp; scope</span>
+      </div>
+      <div class="form-group">
+        <label>House No / Floor</label>
+        <select id="pr-houseno" onchange="onPRHouseChange()"><option value="">-- Select House No --</option></select>
+        <span class="hint">Based on work type</span>
+      </div>
+      <div class="form-group"><label>Worker</label><input type="text" id="pr-worker" readonly placeholder="Auto-filled"></div>
+      <div class="form-group"><label>Contract Amt (USD)</label><input type="number" id="pr-contract-display" readonly placeholder="Auto-filled"></div>
+      <div class="form-group"><label>Retention %</label><input type="number" id="pr-retention-pct" readonly placeholder="Auto-filled"></div>
+      <div class="form-group"><label>Request Amount (USD)</label><input type="number" id="pr-amount" placeholder="0.00" min="0" oninput="updatePaymentSummary()"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-accent" id="btn-submit-pr" onclick="submitPaymentRequest()">Submit Request</button>
+      <button class="btn btn-outline" onclick="clearPRForm()">Clear</button>
+    </div>
+    <!-- PHOTO UPLOAD — only in single mode -->
+    <div class="photo-upload-area">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+        <span class="photo-upload-label">📷 Site Photos</span>
+        <span class="hint" style="font-style:normal;">Attach up to 6 photos (JPG/PNG, max 5 MB each)</span>
+        <span id="pr-photo-count" style="font-size:.8rem;color:var(--muted);margin-left:auto;">0 / 6</span>
+      </div>
+      <input type="file" id="pr-photo-input" accept="image/*" multiple style="display:none" onchange="onPhotoPicked(event)">
+      <div class="photo-grid" id="pr-photo-grid">
+        <div class="photo-add-btn" onclick="document.getElementById('pr-photo-input').click()">
+          <span style="font-size:1.5rem;">➕</span><span>Add Photo</span>
+        </div>
+      </div>
+      <div class="photo-upload-progress" id="pr-upload-progress">
+        <div class="photo-upload-progress-bar" id="pr-upload-bar" style="width:0%"></div>
+      </div>
+      <div id="pr-upload-status" style="font-size:.78rem;color:var(--muted);margin-top:4px;"></div>
+    </div>
+  </div><!-- end single-request-card -->
+  <div class="amount-grid">
+    <div class="amount-mini"><div class="alabel">Contract Amount</div><div class="avalue" id="sum-contract">$ 0.00</div></div>
+    <div class="amount-mini orange"><div class="alabel">Total Claimed</div><div class="avalue" id="sum-claimed">$ 0.00</div></div>
+    <div class="amount-mini green"><div class="alabel">Remaining Claimable</div><div class="avalue" id="sum-remaining">$ 0.00</div></div>
+    <div class="amount-mini purple"><div class="alabel">This Retention</div><div class="avalue" id="sum-this-retention">$ 0.00</div></div>
+    <div class="amount-mini green"><div class="alabel">This Amount to Pay</div><div class="avalue" id="sum-this-pay">$ 0.00</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📄 Payment Request History</div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>#</th><th>Date</th><th>Project</th><th>Scope/Block</th><th>Work Type</th><th>House No</th><th>Worker</th>
+        <th>Contract (USD)</th><th>Request Amt (USD)</th>
+        <th class="th-retention">Retention (USD)</th>
+        <th style="background:#7a3a00;">Material Cut (USD)</th>
+        <th class="th-paid">Net Pay (USD)</th>
+        <th>Remaining (USD)</th><th>Photos</th><th>Status</th>
+      </tr></thead>
+      <tbody id="pr-table-body"><tr><td colspan="15"><div class="empty"><div class="empty-icon">📭</div>No requests yet.</div></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE 6: RETENTION CLAIM ════════════ -->
+<div class="page" id="page-retention">
+  <div class="breadcrumb"><a onclick="showPage('requester')">← Requester</a> / <span id="ret-eng-name-breadcrumb">Retention Claim</span></div>
+  <div class="page-header"><h1 id="ret-page-title">Retention Claim</h1><p>Eligible after: (1) 100% of contract claimed &amp; approved, AND (2) 3 months have passed since first approved request.</p></div>
+  <div class="card">
+    <div class="card-title">💰 Retention Claim Eligibility</div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Project</th><th>Scope/Block</th><th>Work Type</th><th>House No</th>
+        <th>Contract (USD)</th><th>Total Approved (USD)</th><th>% Complete</th>
+        <th>Total Retention Held (USD)</th><th>First Approved</th><th>3-Month Date</th>
+        <th>Eligible?</th><th>Action</th>
+      </tr></thead>
+      <tbody id="ret-table-body"><tr><td colspan="12"><div class="empty"><div class="empty-icon">💰</div>No data.</div></td></tr></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 Retention Claim History</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Date Claimed</th><th>Project</th><th>Scope/Block</th><th>Work Type</th><th>House No</th><th>Retention Amt (USD)</th><th>Status</th><th class="pm-only">Action</th></tr></thead>
+      <tbody id="ret-history-body"><tr><td colspan="9"><div class="empty"><div class="empty-icon">📭</div>No retention claims yet.</div></td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+
+<!-- PHOTO VIEWER MODAL -->
+<div class="modal-overlay" id="photoModal" onclick="if(event.target===this)closeModal('photoModal')">
+  <div class="modal" style="max-width:740px;padding:18px;" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div class="modal-title" style="margin-bottom:0;" id="photo-modal-title">📷 Photos</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-sm" id="btn-open-drive" style="background:#1a73e8;color:#fff;display:none" onclick="openPhotoInDrive()">🔗 Open in Drive</button>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('photoModal')">✕ Close</button>
+      </div>
+    </div>
+    <!-- Thumbnail strip -->
+    <div id="photo-thumb-strip" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+    <!-- Main image -->
+    <div style="background:#111;border-radius:8px;min-height:280px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+      <img id="photo-main" src="" alt="" class="photo-viewer-img" onclick="openPhotoInDrive()" title="Click to open full size">
+      <span id="photo-main-placeholder" style="color:#666;font-size:.9rem;">Select a photo above</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+      <button class="btn btn-outline btn-sm" onclick="navPhoto(-1)">◀ Prev</button>
+      <span id="photo-counter" style="font-size:.82rem;color:var(--muted);"></span>
+      <button class="btn btn-outline btn-sm" onclick="navPhoto(1)">Next ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE: FINANCE ════════════ -->
+<div class="page finance-only" id="page-finance">
+  <div class="page-header"><h1>Finance — Labor Payable</h1><p>Labor payments are scheduled twice a month: mid-month (15th) and end-of-month. Approved requests with "To Be Paid" amounts appear here.</p></div>
+  <div class="card">
+    <div class="card-title">
+      📅 Payment Schedule
+      <span id="finance-next-date" style="font-size:.85rem;font-weight:400;color:var(--muted);margin-left:8px;"></span>
+      <button class="btn btn-green btn-sm" style="margin-left:auto" onclick="downloadFinanceCSV()">⬇️ Download CSV</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+      <div class="amount-mini" style="flex:1;min-width:140px;"><div class="alabel">Total Payable</div><div class="avalue" id="fin-total-payable">$ 0.00</div></div>
+      <div class="amount-mini green" style="flex:1;min-width:140px;"><div class="alabel">Total Paid</div><div class="avalue" id="fin-total-paid">$ 0.00</div></div>
+      <div class="amount-mini orange" style="flex:1;min-width:140px;"><div class="alabel">Outstanding</div><div class="avalue" id="fin-total-outstanding">$ 0.00</div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>#</th><th>Labor Name</th><th>Project</th><th>Scope/Block</th><th>Work Type</th><th>House No</th>
+        <th>Request Date</th><th>Approved Amount (USD)</th><th>Retention (USD)</th>
+        <th style="background:#7a3a00;">Material Cut (USD)</th>
+        <th class="th-paid">Net Pay (USD)</th><th>Status</th>
+      </tr></thead>
+      <tbody id="finance-table-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ════════════ PAGE: LABOR PORTAL ════════════ -->
+<div class="page labor-only" id="page-labor-portal">
+  <div class="page-header"><h1 id="labor-portal-title">My Payments</h1><p>Your contract assignments, pending payments and payment history.</p></div>
+  <div class="amount-grid" style="margin-bottom:18px;">
+    <div class="amount-mini"><div class="alabel">Total Contract</div><div class="avalue" id="lp-contract">$ 0.00</div></div>
+    <div class="amount-mini orange"><div class="alabel">Approved (To Be Paid)</div><div class="avalue" id="lp-tobepaid">$ 0.00</div></div>
+    <div class="amount-mini green"><div class="alabel">Paid</div><div class="avalue" id="lp-paid">$ 0.00</div></div>
+    <div class="amount-mini"><div class="alabel">Balance</div><div class="avalue" id="lp-balance">$ 0.00</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📋 My Scope / Work Assignments</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Project</th><th>Scope/Block</th><th>Work Type</th><th>House No</th><th>Contract (USD)</th><th>Requested (USD)</th><th>Contract Remaining (USD)</th></tr></thead>
+      <tbody id="lp-assignments-body"></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📑 My Approval Summaries (AP)</div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>#</th><th>AP Number</th><th>Date</th><th class="th-paid">Net Pay (USD)</th><th>Status</th><th>Action</th>
+      </tr></thead>
+      <tbody id="lp-ap-body"><tr><td colspan="6"><div class="empty"><div class="empty-icon">📑</div>No AP summaries yet.</div></td></tr></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-title">💰 Payment Request History</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Date</th><th>Project</th><th>Scope/Block</th><th>Work Type</th><th>House No</th><th>Amount (USD)</th><th class="th-retention">Retention (USD)</th><th style="background:#7a3a00;">Mat. Cut (USD)</th><th class="th-paid">Net Pay (USD)</th><th>Status</th></tr></thead>
+      <tbody id="lp-requests-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+</div><!-- end #app -->
+
+<!-- CONTRACT TRANSFER MODAL -->
+<div class="modal-overlay" id="transferModal" onclick="if(event.target===this)closeModal('transferModal')">
+  <div class="modal" style="max-width:600px;padding:28px;" onclick="event.stopPropagation()">
+    <div class="modal-title" style="margin-bottom:4px;">🔄 Transfer Contract</div>
+    <p style="font-size:.83rem;color:var(--muted);margin-bottom:18px;">
+      Transfer the remaining contract balance from the original labor worker to a new labor worker.
+      The original worker's paid/approved history is preserved. A new project entry is created for the new worker.
+    </p>
+    <!-- Original entry summary -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;">ORIGINAL CONTRACT</div>
+      <div id="transfer-from-summary" style="font-size:.9rem;line-height:1.7;"></div>
+    </div>
+    <!-- Transfer form -->
+    <div class="form-grid" style="grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div class="form-group">
+        <label>Transfer To (New Labor Worker)</label>
+        <select id="transfer-to-worker" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);font-family:inherit;background:var(--bg-input);color:var(--text);">
+          <option value="">-- Select New Worker --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Transfer To Engineer</label>
+        <select id="transfer-to-engineer" style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);font-family:inherit;background:var(--bg-input);color:var(--text);">
+          <option value="">-- Select Engineer --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Remaining Contract Amount (USD)</label>
+        <input type="number" id="transfer-amount" min="0" step="0.01"
+          style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);font-family:inherit;background:var(--bg-input);color:var(--text);">
+        <span class="hint">Pre-filled with remaining balance — adjust if needed</span>
+      </div>
+      <div class="form-group">
+        <label>Transfer Date</label>
+        <input type="date" id="transfer-date"
+          style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);font-family:inherit;background:var(--bg-input);color:var(--text);">
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Notes / Reason</label>
+        <input type="text" id="transfer-notes" placeholder="e.g. Labor A resigned — remaining work transferred to Labor B"
+          style="width:100%;padding:8px;border-radius:6px;border:1px solid var(--border);font-family:inherit;background:var(--bg-input);color:var(--text);">
+      </div>
+    </div>
+    <!-- Preview -->
+    <div id="transfer-preview" style="display:none;background:#f0f8f0;border:1px solid #c0e0c0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:.83rem;line-height:1.7;"></div>
+    <div class="form-actions" style="justify-content:flex-end;gap:8px;">
+      <button class="btn btn-outline" onclick="closeModal('transferModal')">Cancel</button>
+      <button class="btn btn-primary" id="btn-confirm-transfer" onclick="confirmTransfer()">✅ Confirm Transfer</button>
+    </div>
+  </div>
+</div>
+
+<!-- AP DETAIL MODAL -->
+<div class="modal-overlay" id="apDetailModal" onclick="if(event.target===this)closeModal('apDetailModal')">
+  <div class="modal" style="max-width:860px;padding:24px;" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div class="modal-title" id="ap-modal-title" style="margin-bottom:2px;">📑 AP001</div>
+        <div id="ap-modal-meta" style="font-size:.82rem;color:var(--muted);"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="ap-modal-status-badge" class="badge"></span>
+        <button class="btn btn-green btn-sm pm-only" id="btn-mark-ap-paid" onclick="markApPaid()" style="display:none">✅ Mark All Paid</button>
+        <button class="btn btn-outline btn-sm" onclick="closeModal('apDetailModal')">✕ Close</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+      <div class="amount-mini" style="flex:1;min-width:120px;"><div class="alabel">Total Net Pay</div><div class="avalue" id="ap-modal-total">$ 0.00</div></div>
+      <div class="amount-mini orange" style="flex:1;min-width:120px;"><div class="alabel">Items</div><div class="avalue" id="ap-modal-count">0</div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>#</th><th>Labor Name</th><th>Project</th><th>Scope/Block</th><th>Work Type</th><th>House No</th>
+        <th>Request Amt</th><th class="th-retention">Retention</th><th style="background:#7a3a00">Mat. Cut</th>
+        <th class="th-paid">Net Pay</th>
+      </tr></thead>
+      <tbody id="ap-modal-items"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-title">⚠️ Confirm Delete</div>
+    <p style="color:var(--muted);font-size:.9rem;">Are you sure? This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-accent" id="confirm-delete-btn" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+<!-- EDIT PROJECT MODAL -->
+<div class="modal-overlay" id="editProjectModal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-title">✏️ Edit Project Entry</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:12px;">
+      <div class="pw-field" style="grid-column:1/-1;">
+        <label>Project Name</label>
+        <input type="text" id="ep-project" placeholder="e.g. Taman Maju Phase 1">
+      </div>
+      <div class="pw-field">
+        <label>Scope / Block</label>
+        <input type="text" id="ep-scope" placeholder="e.g. Block A">
+      </div>
+      <div class="pw-field">
+        <label>Work Type</label>
+        <input type="text" id="ep-worktype" placeholder="e.g. Plastering">
+      </div>
+      <div class="pw-field">
+        <label>House No / Floor</label>
+        <input type="text" id="ep-houseno" placeholder="e.g. Lot 1-10">
+      </div>
+      <div class="pw-field">
+        <label>Contract Amt (USD)</label>
+        <input type="number" id="ep-contract" placeholder="0.00" min="0">
+      </div>
+      <div class="pw-field">
+        <label>Retention (%)</label>
+        <input type="number" id="ep-retention" placeholder="e.g. 5" min="0" max="100">
+      </div>
+      <div class="pw-field">
+        <label>Engineer in Charge</label>
+        <select id="ep-engineer"><option value="">-- Select --</option></select>
+      </div>
+      <div class="pw-field">
+        <label>Worker Name</label>
+        <select id="ep-worker"><option value="">-- Select --</option></select>
+      </div>
+    </div>
+    <div class="pw-err" id="ep-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('editProjectModal')">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-edit" onclick="saveEditProject()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="changePwModal">
+  <div class="modal">
+    <div class="modal-title">🔑 Change Password</div>
+    <div class="pw-field"><label>Current Password</label><input type="password" id="cpw-current"></div>
+    <div class="pw-field"><label>New Password</label><input type="password" id="cpw-new" placeholder="Min 4 characters"></div>
+    <div class="pw-field"><label>Confirm New Password</label><input type="password" id="cpw-confirm"></div>
+    <div class="pw-err" id="cpw-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('changePwModal')">Cancel</button>
+      <button class="btn btn-primary" id="btn-save-pw" onclick="doChangePw()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="sync-bar"><div class="sync-dot" id="sync-dot"></div><span id="sync-msg">Connecting…</span></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  ⚠️  PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+// ══════════════════════════════════════════════════════
+const API_URL = 'https://script.google.com/macros/s/AKfycbxndodBm1PovjPvosYfnQgtGazKhz0JfurOtiko9K9YmEzi7lUuO-4Z3GGMukCBuuSDjw/exec';
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let projectEntries    = [];  // {project,scope,worktype,houseno,contract,retention,engineer,worker}
+let laborEntries      = [];  // {name,phone}
+let engineers         = [];  // {name}
+let paymentRequests   = {};  // engIdx → [{date,project,scope,worktype,houseno,worker,contract,retentionPct,amount,retention,amtToPay,entryIndex,status,rowId}]
+let retentionClaims   = {};  // engIdx → [{date,project,scope,worktype,houseno,retentionAmt,status,rowId}]
+
+let currentRole       = null;
+let currentUser       = null;
+let currentEngIndex   = null;
+let currentPREntryIdx = null;
+let deleteTarget      = {type:null,index:null,rowId:null};
+let editingProjectIndex = null;
+
+let loginRoleMode     = 'pm';
+let currentLaborName  = null;  // for labor portal
+let approvals         = [];    // [{apId,apNumber,createdDate,createdBy,status,totalAmount,items:[]}]
+let laborEntryData    = {};    // keyed state for labor portal
+// ── Photo state ──────────────────────────────────────
+let pendingPhotos = [];   // [{dataUrl, name, file}]  waiting to be uploaded
+let viewerPhotos  = [];   // [{src, driveUrl}]         for the modal viewer
+let viewerIdx     = 0;
+let apiReady          = false;
+
+// ══════════════════════════════════════════════════════
+//  API  — GET with URL-encoded payload (CORS-safe)
+// ══════════════════════════════════════════════════════
+async function api(payload) {
+  setSyncing(true);
+  try {
+    const url        = API_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+    const controller = new AbortController();
+    const timer      = setTimeout(()=>controller.abort(), 90000); // 90s for large operations
+    const res  = await fetch(url, {method:'GET', redirect:'follow', signal:controller.signal});
+    clearTimeout(timer);
+    const text = await res.text();
+    const data = JSON.parse(text.substring(text.indexOf('{')));
+    setSyncing(false);
+    if (!data.ok) throw new Error(data.error||'Server error');
+    return data;
+  } catch(err) { setSyncing(false,true); throw err; }
+}
+
+
+// ── POST-based API call for large payloads (avoids URL length limit) ────────
+// Uses hidden form POST + CacheService poll — same as photo upload strategy.
+function apiPost(payload) {
+  return new Promise((resolve, reject) => {
+    const tempId = 'ap_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    payload._tempId = tempId; // Apps Script will store result keyed by this
+
+    // Build hidden iframe
+    let iframe = document.getElementById('_apicall_iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id   = '_apicall_iframe';
+      iframe.name = '_apicall_iframe';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+
+    // Submit via hidden form POST
+    const form  = document.createElement('form');
+    form.method = 'POST';
+    form.action = API_URL;
+    form.target = '_apicall_iframe';
+    form.style.display = 'none';
+    const input = document.createElement('input');
+    input.type  = 'hidden';
+    input.name  = 'payload';
+    input.value = JSON.stringify(payload);
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    // Poll for result via GET
+    setSyncing(true);
+    let attempts = 0;
+    const maxAttempts = 45; // 90 seconds
+    const poll = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) {
+        clearInterval(poll);
+        setSyncing(false, true);
+        reject(new Error('Request timed out after 90s'));
+        return;
+      }
+      try {
+        const res  = await fetch(API_URL + '?payload=' + encodeURIComponent(
+          JSON.stringify({action:'getUploadResult', tempId})
+        ), {method:'GET', redirect:'follow'});
+        const text = await res.text();
+        const data = JSON.parse(text.substring(text.indexOf('{')));
+        if (data.ready) {
+          clearInterval(poll);
+          setSyncing(false);
+          if (!data.ok) reject(new Error(data.error || 'Server error'));
+          else resolve(data);
+        }
+        // not ready yet — keep polling
+      } catch(e) { /* network blip — keep polling */ }
+    }, 2000);
+  });
+}
+
+function setSyncing(active,isError=false) {
+  const dot=document.getElementById('sync-dot'),msg=document.getElementById('sync-msg');
+  if (isError){dot.className='sync-dot error';msg.textContent='Sync error';}
+  else if (active){dot.className='sync-dot syncing';msg.textContent='Syncing…';}
+  else{dot.className='sync-dot';msg.textContent='Synced · '+new Date().toLocaleTimeString();}
+}
+function setLoading(show,msg='Please wait…'){
+  document.getElementById('loading-overlay').classList.toggle('show',show);
+  document.getElementById('loading-msg').textContent=msg;
+}
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+async function init() {
+  if (!API_URL||API_URL==='YOUR_WEB_APP_URL_HERE'){
+    document.getElementById('setup-note').style.display='block';
+    setSyncing(false,true); return;
+  }
+  apiReady=true;
+  setLoading(true,'Connecting to Google Sheets…');
+  try { await loadAllData(); setLoading(false); }
+  catch(e){ setLoading(false); setSyncing(false,true); document.getElementById('login-err').textContent='Cannot reach Google Sheets.'; }
+}
+
+async function loadAllData() {
+  const data=await api({action:'loadAll'});
+  // Trim all string fields to eliminate Google Sheets whitespace issues
+  projectEntries = (data.projects||[]).map(p=>({
+    project  :String(p.project  ||'').trim(),
+    scope    :String(p.scope    ||'').trim(),
+    worktype :String(p.worktype ||'').trim(),
+    houseno  :String(p.houseno  ||'').trim(),
+    engineer :String(p.engineer ||'').trim(),
+    worker   :String(p.worker   ||'').trim(),
+    contract :parseFloat(p.contract)||0,
+    retention:parseFloat(p.retention)||0
+  }));
+  laborEntries = (data.labor||[]).map(l=>({name:String(l.name||'').trim(),phone:String(l.phone||'').trim()}));
+  engineers    = (data.engineers||[]).map(e=>({...e,name:String(e.name||'').trim()}));
+  paymentRequests={};
+  retentionClaims={};
+  engineers.forEach((_,i)=>{
+    paymentRequests[i] = ((data.paymentsByEng||{})[i]||[]).map(r=>{
+      const amt     = parseFloat(r.amount)      ||0;
+      const retPct  = parseFloat(r.retentionPct)||0;
+      const ret     = parseFloat(r.retention)   ||0;
+      const mc      = parseFloat(r.materialCut) ||0;
+      // Always recalculate — never trust stored computed values (column shift safe)
+      const calcRet = parseFloat((amt * retPct / 100).toFixed(2));
+      const truRet  = (ret > amt || ret < 0) ? calcRet : ret;
+      const atp     = parseFloat((amt - truRet).toFixed(2));
+      const mcSafe  = (mc >= 0 && mc <= atp) ? mc : 0;
+      const np      = parseFloat((atp - mcSafe).toFixed(2));
+      const ei      = r.entryIndex;
+      return {
+      ...r,
+      amount      : amt,
+      contract    : parseFloat(r.contract)||0,
+      retentionPct: retPct,
+      retention   : truRet,
+      amtToPay    : atp,
+      materialCut : mcSafe,
+      netPay      : np,
+      // Restore photos array from Drive URLs returned by Code.gs
+      photos      : (r.photos||[]).map(p=>({
+        viewUrl  : String(p.viewUrl  ||'').trim(),
+        thumbUrl : String(p.thumbUrl ||p.viewUrl||'').trim()
+      })).filter(p=>p.viewUrl)
+    };});
+    retentionClaims[i] = ((data.retentionByEng||{})[i]||[]).map(r=>({...r,retentionAmt:parseFloat(r.retentionAmt)||0}));
+  });
+  // Load approvals from server
+  approvals = (data.approvals||[]).map(a=>({
+    ...a,
+    totalAmount: parseFloat(a.totalAmount)||0,
+    items: (a.items||[]).map(item=>({
+      ...item,
+      amount      : parseFloat(item.amount)||0,
+      retention   : parseFloat(item.retention)||0,
+      materialCut : parseFloat(item.materialCut)||0,
+      netPay      : parseFloat(item.netPay)||0
+    }))
+  }));
+  invalidateMaps();
+  populateEngLoginDropdown();
+  populateLaborLoginDropdown();
+}
+
+async function reloadData() {
+  if (!apiReady) return;
+  setLoading(true,'Refreshing…');
+  try {
+    await loadAllData(); setLoading(false);
+    const id=document.querySelector('.page.active')?.id?.replace('page-','');
+    if (id==='project-master'){refreshPMDropdowns();renderPMTable();}
+    else if (id==='labor-master') renderLMTable();
+    else if (id==='requester')    renderEngGrid();
+    else if (id==='pm-review')    renderPMReview();
+    else if (id==='payment'&&currentEngIndex!==null){populatePRProjects();renderPRTable();updatePaymentSummary();}
+    else if (id==='retention'&&currentEngIndex!==null){renderRetentionTable();renderRetentionHistory();}
+    showToast('Refreshed!');
+  } catch(e){setLoading(false);showToast('Refresh failed: '+e.message,'error');}
+}
+
+// ══════════════════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════════════════
+function switchLoginRole(role) {
+  loginRoleMode=role;
+  // Map role names to their actual HTML element id suffixes
+  const tabIds   = {pm:'pm',engineer:'eng',finance:'finance',labor:'labor'};
+  const fieldIds = {pm:'pm',engineer:'eng',finance:'finance',labor:'labor'};
+  ['pm','engineer','finance','labor'].forEach(r=>{
+    const tab = document.getElementById('tab-'+tabIds[r]+'-role');
+    if(tab) tab.classList.toggle('active', r===role);
+    const fld = document.getElementById('login-'+fieldIds[r]+'-fields');
+    if(fld) fld.style.display = (r===role) ? '' : 'none';
+  });
+  document.getElementById('login-err').textContent='';
+}
+function populateEngLoginDropdown() {
+  const sel=document.getElementById('eng-select'),cur=sel.value;
+  sel.innerHTML='<option value="">-- Select Engineer --</option>'+engineers.map(e=>`<option value="${e.name}">${e.name}</option>`).join('');
+  if (engineers.find(e=>e.name===cur)) sel.value=cur;
+}
+function populateLaborLoginDropdown() {
+  const sel=document.getElementById('labor-select'); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">-- Select Your Name --</option>'+laborEntries.map(l=>`<option value="${l.name}">${l.name}</option>`).join('');
+  if (laborEntries.find(l=>l.name===cur)) sel.value=cur;
+}
+async function doLogin() {
+  if (!apiReady){document.getElementById('login-err').textContent='API not configured.';return;}
+  document.getElementById('login-err').textContent='';
+  const btn=document.getElementById('login-btn');
+  btn.disabled=true;btn.textContent='Signing in…';
+  try {
+    if (loginRoleMode==='pm') {
+      const u=document.getElementById('pm-username').value.trim();
+      const p=document.getElementById('pm-password').value;
+      if (!u||!p){document.getElementById('login-err').textContent='Enter username and password.';return;}
+      const res=await api({action:'validateLogin',username:u,role:'pm',password:p});
+      if (res.ok) startSession('pm',u);
+      else document.getElementById('login-err').textContent='Invalid username or password.';
+    } else if(loginRoleMode==='engineer') {
+      const engName=document.getElementById('eng-select').value;
+      const p=document.getElementById('eng-password').value;
+      if (!engName){document.getElementById('login-err').textContent='Select your name.';return;}
+      if (!p){document.getElementById('login-err').textContent='Enter password.';return;}
+      const res=await api({action:'validateLogin',username:engName,role:'engineer',password:p});
+      if (res.ok){currentEngIndex=engineers.findIndex(e=>e.name===engName);startSession('engineer',engName);}
+      else document.getElementById('login-err').textContent='Incorrect password. Default: 1234';
+    } else if(loginRoleMode==='finance') {
+      const u=document.getElementById('finance-username').value.trim();
+      const p=document.getElementById('finance-password').value;
+      if (!u||!p){document.getElementById('login-err').textContent='Enter username and password.';return;}
+      const res=await api({action:'validateLogin',username:u,role:'finance',password:p});
+      if (res.ok) startSession('finance',u);
+      else document.getElementById('login-err').textContent='Invalid username or password.';
+    } else if(loginRoleMode==='labor') {
+      const labName=document.getElementById('labor-select').value;
+      const p=document.getElementById('labor-password').value;
+      if (!labName){document.getElementById('login-err').textContent='Select your name.';return;}
+      if (!p){document.getElementById('login-err').textContent='Enter password.';return;}
+      const res=await api({action:'validateLogin',username:labName,role:'labor',password:p});
+      if (res.ok){currentLaborName=labName; startSession('labor',labName);}
+      else document.getElementById('login-err').textContent='Incorrect password. Default: 1234';
+    }
+  } catch(e){document.getElementById('login-err').textContent='Connection error: '+e.message;}
+  finally{btn.disabled=false;btn.textContent='Sign In →';}
+}
+function startSession(role,name) {
+  currentRole=role;currentUser=name;
+  document.body.classList.remove('role-pm','role-engineer','role-finance','role-labor');
+  document.body.classList.add('role-'+role);
+  const badge=document.getElementById('nav-role-badge');
+  const roleLabels={pm:'PM',engineer:'Engineer',finance:'Finance',labor:'Labor'};
+  badge.textContent=roleLabels[role]||role;
+  const roleCls={pm:'',engineer:' eng',finance:' finance',labor:' labor'};
+  badge.className='role-badge'+(roleCls[role]||'');
+  document.getElementById('nav-username-display').textContent=name;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  // Show/hide role-specific nav tabs
+  document.getElementById('navtab-finance').style.display=(role==='finance')?'':'none';
+  document.getElementById('navtab-labor').style.display  =(role==='labor')  ?'':'none';
+  if(role==='engineer'&&currentEngIndex!==null){
+    document.getElementById('tab-payment').style.display='';
+    document.getElementById('tab-retention').style.display='';
+    openPaymentPage(currentEngIndex);
+  } else if(role==='finance'){
+    showPage('finance');
+  } else if(role==='labor'){
+    document.getElementById('navtab-pm').style.display='none';
+    document.getElementById('navtab-lm').style.display='none';
+    document.getElementById('navtab-req').style.display='none';
+    document.getElementById('navtab-review').style.display='none';
+    showPage('labor-portal');
+    renderLaborPortal();
+  } else {
+    showPage('project-master');
+  }
+}
+function logout() {
+  currentRole=null;currentUser=null;currentEngIndex=null;currentLaborName=null;
+  document.body.classList.remove('role-pm','role-engineer','role-finance','role-labor');
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  ['pm-password','eng-password','finance-password','labor-password'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('login-err').textContent='';
+  document.getElementById('tab-payment').style.display='none';
+  document.getElementById('tab-retention').style.display='none';
+  // Restore all nav tabs visibility
+  ['navtab-pm','navtab-lm','navtab-req','navtab-review'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='';
+  });
+  ['navtab-finance','navtab-labor'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
+  });
+  switchLoginRole('pm');
+}
+
+// ══════════════════════════════════════════════════════
+//  CHANGE PASSWORD
+// ══════════════════════════════════════════════════════
+function openChangePw(){
+  ['cpw-current','cpw-new','cpw-confirm'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cpw-err').textContent='';
+  document.getElementById('changePwModal').classList.add('open');
+}
+async function doChangePw(){
+  const cur=document.getElementById('cpw-current').value;
+  const nw=document.getElementById('cpw-new').value;
+  const con=document.getElementById('cpw-confirm').value;
+  const errEl=document.getElementById('cpw-err');
+  if (nw.length<4){errEl.textContent='Min 4 chars.';return;}
+  if (nw!==con){errEl.textContent='Passwords do not match.';return;}
+  const btn=document.getElementById('btn-save-pw');btn.disabled=true;
+  try{await api({action:'changePassword',username:currentUser,role:currentRole,oldPw:cur,newPw:nw});closeModal('changePwModal');showToast('Password changed!');}
+  catch(e){errEl.textContent=e.message||'Error.';}
+  finally{btn.disabled=false;}
+}
+
+// ══════════════════════════════════════════════════════
+//  NAV
+// ══════════════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const map={'project-master':'navtab-pm','labor-master':'navtab-lm','requester':'navtab-req','pm-review':'navtab-review','payment':'tab-payment','retention':'tab-retention','finance':'navtab-finance','labor-portal':'navtab-labor'};
+  if (map[id]) document.getElementById(map[id]).classList.add('active');
+  if (id==='project-master'){refreshPMDropdowns();renderPMTable();}
+  if (id==='labor-master')  { renderLMTable(); renderAPList(); }
+  if (id==='requester')     renderEngGrid();
+  if (id==='pm-review')     { renderPMReview(); renderPMRetentionClaims(); }
+  if (id==='retention'&&currentEngIndex!==null){renderRetentionTable();renderRetentionHistory();}
+  if (id==='finance')       renderFinancePage();
+  if (id==='labor-portal')  renderLaborPortal();
+  if (id==='labor-master')  { renderLMTable(); renderAPList(); }
+}
+
+// ══════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════
+function showToast(msg,type='success'){
+  const el=document.createElement('div');el.className='toast '+type;el.textContent=msg;
+  document.getElementById('toastContainer').appendChild(el);setTimeout(()=>el.remove(),3200);
+}
+function fmt(n){return (n||0).toLocaleString('en-US',{minimumFractionDigits:2});}
+function isPM(){return currentRole==='pm';}
+function setBusy(id,busy){const b=document.getElementById(id);if(b)b.disabled=busy;}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function populateSelect(selId,values,placeholder){
+  const sel=document.getElementById(selId),cur=sel.value;
+  sel.innerHTML=`<option value="">${placeholder}</option>`+values.map(v=>`<option value="${v}">${v}</option>`).join('');
+  if (values.includes(cur)) sel.value=cur;
+}
+
+// ── Entry lookups — all comparisons trimmed to handle Google Sheets whitespace ──
+function s(v){return String(v||'').trim();}  // safe string trim helper
+
+function projectsForEngineer(engName){
+  const en=s(engName);
+  return [...new Set(projectEntries.filter(e=>s(e.engineer)===en).map(e=>s(e.project)))].filter(Boolean).sort();
+}
+function scopesForPE(proj,engName){
+  const pj=s(proj),en=s(engName);
+  return [...new Set(projectEntries.filter(e=>s(e.project)===pj&&(!en||s(e.engineer)===en)).map(e=>s(e.scope)))].filter(Boolean).sort();
+}
+function worktypesForPSE(proj,scope,engName){
+  const pj=s(proj),sc=s(scope),en=s(engName);
+  return [...new Set(projectEntries.filter(e=>s(e.project)===pj&&s(e.scope)===sc&&(!en||s(e.engineer)===en)).map(e=>s(e.worktype)))].filter(Boolean);
+}
+// alias used in onPRScopeChange
+function worktypesForPSWE(proj,scope,engName){return worktypesForPSE(proj,scope,engName);}
+function housenosForPSWE(proj,scope,wt,engName){
+  const pj=s(proj),sc=s(scope),wk=s(wt),en=s(engName);
+  return [...new Set(projectEntries.filter(e=>s(e.project)===pj&&s(e.scope)===sc&&s(e.worktype)===wk&&(!en||s(e.engineer)===en)).map(e=>s(e.houseno)))].filter(Boolean);
+}
+function findEntry(proj,scope,wt,houseno,engName){
+  const pj=s(proj),sc=s(scope),wk=s(wt),hn=s(houseno),en=s(engName);
+  return projectEntries.find(e=>s(e.project)===pj&&s(e.scope)===sc&&s(e.worktype)===wk&&s(e.houseno)===hn&&(!en||s(e.engineer)===en));
+}
+
+// Total approved payment (excl. retention) for an entry index
+// ── Project-key matching — includes worker so transferred contracts don't share totals ──
+// project|scope|worktype|houseno|worker — unique per labor worker per work item
+function projectKey(obj){
+  return [s(obj.project),s(obj.scope),s(obj.worktype),s(obj.houseno),s(obj.worker)].join('|');
+}
+// Build lookup maps: naturalKey → aggregated value
+// Called once per render cycle via getClaimedMap() etc (lazy cache)
+let _claimedMapAll=null, _claimedMapApproved=null, _retentionMap=null, _dateMap=null;
+function invalidateMaps(){ _claimedMapAll=null; _claimedMapApproved=null; _retentionMap=null; _dateMap=null; }
+function buildClaimedMap(statusFilter){
+  const map={};
+  Object.values(paymentRequests).forEach(reqs=>(reqs||[]).forEach(r=>{
+    // 'approved' filter includes 'paid' (paid = was approved + disbursed)
+    if(statusFilter==='approved'){
+      if(r.status!=='approved'&&r.status!=='paid') return;
+    } else if(statusFilter){
+      if(r.status!==statusFilter) return;
+    } else {
+      // No filter (all claimed) — EXCLUDE rejected so it returns to contract balance
+      if(r.status==='rejected') return;
+    }
+    const k=[s(r.project),s(r.scope),s(r.worktype),s(r.houseno),s(r.worker)].join('|');
+    if(!k||k==='||||') return;
+    map[k]=(map[k]||0)+(parseFloat(r.amount)||0);
+  }));
+  return map;
+}
+function buildRetentionMap(){
+  const map={};
+  // Step 1: Add up all retention from approved/paid payment records
+  Object.values(paymentRequests).forEach(reqs=>(reqs||[]).forEach(r=>{
+    if(r.status!=='approved'&&r.status!=='paid') return;
+    const k=[s(r.project),s(r.scope),s(r.worktype),s(r.houseno),s(r.worker)].join('|');
+    if(!k||k==='||||') return;
+    const amt     = parseFloat(r.amount)||0;
+    const retPct  = parseFloat(r.retentionPct)||0;
+    const ret     = parseFloat(r.retention)||0;
+    const calcRet = parseFloat((amt*retPct/100).toFixed(2));
+    const truRet  = (ret>amt||ret<0) ? calcRet : ret;
+    map[k]=(map[k]||0)+truRet;
+  }));
+  // Step 2: Subtract retention that has already been claimed and approved/paid
+  // (approved or paid retention claim = money has been or will be disbursed)
+  Object.values(retentionClaims).forEach(claims=>(claims||[]).forEach(c=>{
+    if(c.status!=='approved'&&c.status!=='paid') return;
+    const k=[s(c.project),s(c.scope),s(c.worktype),s(c.houseno||''),s(c.worker||'')].join('|');
+    if(!k||k==='||||') return;
+    const claimed = parseFloat(c.retentionAmt)||0;
+    map[k] = Math.max(0, (map[k]||0) - claimed);
+  }));
+  return map;
+}
+function buildDateMap(){
+  const map={};
+  Object.values(paymentRequests).forEach(reqs=>(reqs||[]).forEach(r=>{
+    // Track earliest date for approved OR paid requests (for retention eligibility)
+    if((r.status!=='approved'&&r.status!=='paid')||!r.date) return;
+    const k=[s(r.project),s(r.scope),s(r.worktype),s(r.houseno),s(r.worker)].join('|');
+    if(!k||k==='||||') return;
+    // Normalize to YYYY-MM-DD (handles ISO datetime like 2025-12-10T17:00:00.000Z)
+    const dateNorm = String(r.date).slice(0,10);
+    if(!map[k]||dateNorm<map[k]) map[k]=dateNorm;
+  }));
+  return map;
+}
+// ── DEBUG: log all keys in console so we can diagnose mismatches ──────────
+function debugKeys(){
+  console.log('=== PROJECT ENTRY KEYS ===');
+  projectEntries.forEach((e,i)=>console.log(i, JSON.stringify(projectKey(e)), e));
+  console.log('=== PAYMENT REQUEST KEYS ===');
+  Object.values(paymentRequests).forEach(reqs=>(reqs||[]).forEach(r=>{
+    const k=[s(r.project),s(r.scope),s(r.worktype),s(r.houseno)].join('|');
+    console.log('payment key:', JSON.stringify(k), 'amount:', r.amount, 'project:', r.project, 'scope:', r.scope, 'worktype:', r.worktype, 'houseno:', r.houseno);
+  }));
+  console.log('=== CLAIMED MAP ===');
+  console.log(getClaimedMapAll());
+}
+
+// Cached accessors — call invalidateMaps() whenever paymentRequests changes
+function getClaimedMapAll()     { if(!_claimedMapAll)      _claimedMapAll=buildClaimedMap(null);       return _claimedMapAll; }
+function getClaimedMapApproved(){ if(!_claimedMapApproved) _claimedMapApproved=buildClaimedMap('approved'); return _claimedMapApproved; }
+function getRetentionMap()      { if(!_retentionMap)        _retentionMap=buildRetentionMap();          return _retentionMap; }
+function getDateMap()           { if(!_dateMap)             _dateMap=buildDateMap();                    return _dateMap; }
+
+function getTotalApprovedForEntry(entryIdx){
+  if(!projectEntries[entryIdx]) return 0;
+  return getClaimedMapApproved()[projectKey(projectEntries[entryIdx])]||0;
+}
+function getTotalClaimedForEntry(entryIdx){
+  if(!projectEntries[entryIdx]) return 0;
+  return getClaimedMapAll()[projectKey(projectEntries[entryIdx])]||0;
+}
+function getTotalRetentionForEntry(entryIdx){
+  if(!projectEntries[entryIdx]) return 0;
+  return getRetentionMap()[projectKey(projectEntries[entryIdx])]||0;
+}
+function getFirstApprovedDate(entryIdx){
+  if(!projectEntries[entryIdx]) return null;
+  return getDateMap()[projectKey(projectEntries[entryIdx])]||null;
+}
+function isRetentionClaimed(entryIdx){
+  if(!projectEntries[entryIdx]) return false;
+  const eKey=projectKey(projectEntries[entryIdx]);
+  return Object.values(retentionClaims).some(claims=>(claims||[]).some(c=>{
+    if(c.status==='rejected') return false;
+    return [s(c.project),s(c.scope),s(c.worktype),s(c.houseno),s(c.worker||'')].join('|')===eKey;
+  }));
+}
+
+// ══════════════════════════════════════════════════════
+//  PAGE 1 — PROJECT MASTER
+// ══════════════════════════════════════════════════════
+function refreshPMDropdowns(){
+  const es=document.getElementById('pm-engineer'),ce=es.value;
+  es.innerHTML='<option value="">-- Select Engineer --</option>'+engineers.map(e=>`<option value="${e.name}">${e.name}</option>`).join('');
+  if(engineers.find(e=>e.name===ce))es.value=ce;
+  const ws=document.getElementById('pm-worker'),cw=ws.value;
+  ws.innerHTML='<option value="">-- Select Worker --</option>'+laborEntries.map(l=>`<option value="${l.name}">${l.name}</option>`).join('');
+  if(laborEntries.find(l=>l.name===cw))ws.value=cw;
+}
+async function addProjectEntry(){
+  if(!isPM())return;
+  const data={
+    project :document.getElementById('pm-project').value.trim(),
+    scope   :document.getElementById('pm-scope').value.trim(),
+    worktype:document.getElementById('pm-worktype').value.trim(),
+    houseno :document.getElementById('pm-houseno').value.trim(),
+    contract:parseFloat(document.getElementById('pm-contract').value)||0,
+    retention:parseFloat(document.getElementById('pm-retention').value)||0,
+    engineer:document.getElementById('pm-engineer').value,
+    worker  :document.getElementById('pm-worker').value
+  };
+  if(!data.project||!data.scope||!data.worktype){showToast('Project, Scope and Work Type required.','error');return;}
+  setBusy('btn-add-project',true);
+  try{
+    await api({action:'addProject',data});
+    projectEntries.push(data);renderPMTable();clearPMForm();
+    showToast('Project entry saved!');
+  }catch(e){showToast('Save failed: '+e.message,'error');}
+  finally{setBusy('btn-add-project',false);}
+}
+function clearPMForm(){
+  ['pm-project','pm-scope','pm-worktype','pm-houseno','pm-contract','pm-retention'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pm-engineer').value='';document.getElementById('pm-worker').value='';
+}
+function openEditProject(index){
+  if(!isPM())return;
+  const e=projectEntries[index];
+  editingProjectIndex=index;
+  document.getElementById('ep-project').value  =e.project  ||'';
+  document.getElementById('ep-scope').value    =e.scope    ||'';
+  document.getElementById('ep-worktype').value =e.worktype ||'';
+  document.getElementById('ep-houseno').value  =e.houseno  ||'';
+  document.getElementById('ep-contract').value =e.contract ||'';
+  document.getElementById('ep-retention').value=e.retention||'';
+  // Populate engineer dropdown
+  const es=document.getElementById('ep-engineer');
+  es.innerHTML='<option value="">-- Select --</option>'+engineers.map(eng=>`<option value="${eng.name}">${eng.name}</option>`).join('');
+  es.value=e.engineer||'';
+  // Populate worker dropdown
+  const ws=document.getElementById('ep-worker');
+  ws.innerHTML='<option value="">-- Select --</option>'+laborEntries.map(l=>`<option value="${l.name}">${l.name}</option>`).join('');
+  ws.value=e.worker||'';
+  document.getElementById('ep-err').textContent='';
+  document.getElementById('editProjectModal').classList.add('open');
+}
+
+async function saveEditProject(){
+  if(!isPM()||editingProjectIndex===null)return;
+  const data={
+    project  :document.getElementById('ep-project').value.trim(),
+    scope    :document.getElementById('ep-scope').value.trim(),
+    worktype :document.getElementById('ep-worktype').value.trim(),
+    houseno  :document.getElementById('ep-houseno').value.trim(),
+    contract :parseFloat(document.getElementById('ep-contract').value)||0,
+    retention:parseFloat(document.getElementById('ep-retention').value)||0,
+    engineer :document.getElementById('ep-engineer').value,
+    worker   :document.getElementById('ep-worker').value
+  };
+  if(!data.project||!data.scope||!data.worktype){
+    document.getElementById('ep-err').textContent='Project, Scope/Block and Work Type are required.'; return;
+  }
+  const btn=document.getElementById('btn-save-edit');btn.disabled=true;btn.textContent='Saving…';
+  try{
+    await api({action:'updateProject',index:editingProjectIndex,data});
+    projectEntries[editingProjectIndex]=data;
+    closeModal('editProjectModal');
+    renderPMTable();renderEngGrid();
+    showToast('Project entry updated!');
+  }catch(e){document.getElementById('ep-err').textContent='Save failed: '+e.message;}
+  finally{btn.disabled=false;btn.textContent='💾 Save Changes';}
+}
+
+// ── Filter helpers ───────────────────────────────────────────────────────
+function gv(id){ return (document.getElementById(id)||{value:''}).value; }
+
+function getPMFilters(){
+  return {
+    project : gv('f-project'),
+    scope   : gv('f-scope'),
+    worktype: gv('f-worktype'),
+    engineer: gv('f-engineer'),
+    worker  : gv('f-worker'),
+    search  : gv('f-search').toLowerCase().trim()
+  };
+}
+
+// Set options on a <select>, preserving the current value if still valid.
+// Clears the value (and cascades) when the current selection is no longer valid.
+function setFilterOpts(id, values, label, onClear){
+  const sel=document.getElementById(id); if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML=`<option value="">${label}</option>`+
+    values.map(v=>`<option value="${v}">${v}</option>`).join('');
+  if(values.includes(cur)){
+    sel.value=cur;           // keep valid selection
+  } else {
+    sel.value='';            // selected value no longer valid — clear it
+    if(cur && onClear) onClear(); // cascade-clear downstream dropdowns
+  }
+}
+
+// Cascade-aware filter dropdown population.
+// Rules:
+//   Scope    → filtered by Project
+//   WorkType → filtered by Project + Scope
+//   Engineer → filtered by Project + Scope
+//   Worker   → filtered by Project + Scope + WorkType
+function populatePMFilterDropdowns(){
+  const proj = gv('f-project');
+  const sc   = gv('f-scope');
+  const wt   = gv('f-worktype');
+
+  // Level 0 — Project: always all unique projects
+  setFilterOpts('f-project',
+    [...new Set(projectEntries.map(e=>s(e.project)))].filter(Boolean).sort(),
+    'All Projects'
+  );
+
+  // Level 1 — Scope: only scopes that exist within the selected project
+  const scopePool = projectEntries
+    .filter(e => !proj || s(e.project)===proj)
+    .map(e=>s(e.scope));
+  setFilterOpts('f-scope',
+    [...new Set(scopePool)].filter(Boolean).sort(),
+    'All Scopes',
+    ()=>{ clearDownstream(['f-worktype','f-engineer','f-worker']); }
+  );
+
+  // Level 2 — Work Type: only work types within project + scope
+  const wtPool = projectEntries
+    .filter(e => (!proj || s(e.project)===proj) && (!sc || s(e.scope)===sc))
+    .map(e=>s(e.worktype));
+  setFilterOpts('f-worktype',
+    [...new Set(wtPool)].filter(Boolean).sort(),
+    'All Work Types',
+    ()=>{ clearDownstream(['f-worker']); }
+  );
+
+  // Level 2b — Engineer: only engineers within project + scope
+  const engPool = projectEntries
+    .filter(e => (!proj || s(e.project)===proj) && (!sc || s(e.scope)===sc))
+    .map(e=>s(e.engineer));
+  setFilterOpts('f-engineer',
+    [...new Set(engPool)].filter(Boolean).sort(),
+    'All Engineers'
+  );
+
+  // Level 3 — Worker: only workers within project + scope + work type
+  const workerPool = projectEntries
+    .filter(e =>
+      (!proj || s(e.project)===proj) &&
+      (!sc   || s(e.scope)  ===sc)   &&
+      (!wt   || s(e.worktype)===wt)
+    )
+    .map(e=>s(e.worker));
+  setFilterOpts('f-worker',
+    [...new Set(workerPool)].filter(Boolean).sort(),
+    'All Workers'
+  );
+}
+
+function clearDownstream(ids){
+  ids.forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+}
+
+function clearPMFilters(){
+  ['f-project','f-scope','f-worktype','f-engineer','f-worker'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  const el=document.getElementById('f-search'); if(el) el.value='';
+  renderPMTable();
+}
+
+// Called by every filter onchange — re-render (which also re-populates dropdowns)
+function applyPMFilters(){ renderPMTable(); }
+
+function renderPMTable(){
+  const tbody   = document.getElementById('pm-table-body');
+  const tfoot   = document.getElementById('pm-table-foot');
+  const countEl = document.getElementById('pm-filter-count');
+
+
+  // Helper to set a summary card value
+  function setCard(id, value, isNeg){
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.textContent = `$ ${fmt(value)}`;
+    el.style.color = isNeg ? 'var(--danger)' : '';
+  }
+
+  // Zero out cards and hide footer if no data
+  if(!projectEntries.length){
+    tbody.innerHTML='<tr><td colspan="13"><div class="empty"><div class="empty-icon">📭</div>No entries yet.</div></td></tr>';
+    if(countEl) countEl.textContent='';
+    if(tfoot) tfoot.style.display='none';
+    ['sum-pm-contract','sum-pm-paid','sum-pm-balance','sum-pm-retention'].forEach(id=>setCard(id,0));
+    return;
+  }
+
+  populatePMFilterDropdowns();
+  const f=getPMFilters();
+  const visible=[];
+  projectEntries.forEach((e,i)=>{
+    if(f.project  && s(e.project)  !==f.project)  return;
+    if(f.scope    && s(e.scope)    !==f.scope)     return;
+    if(f.worktype && s(e.worktype) !==f.worktype)  return;
+    if(f.engineer && s(e.engineer) !==f.engineer)  return;
+    if(f.worker   && s(e.worker)   !==f.worker)    return;
+    if(f.search){
+      const row=[e.project,e.scope,e.worktype,e.houseno,e.engineer,e.worker].join(' ').toLowerCase();
+      if(!row.includes(f.search)) return;
+    }
+    visible.push({e,i});
+  });
+
+  // Update entry count label
+  if(countEl){
+    const total=projectEntries.length;
+    countEl.textContent = visible.length===total
+      ? `${total} entr${total!==1?'ies':'y'}`
+      : `Showing ${visible.length} of ${total}`;
+  }
+
+  if(!visible.length){
+    tbody.innerHTML='<tr><td colspan="13"><div class="empty"><div class="empty-icon">🔍</div>No entries match your filters.</div></td></tr>';
+    if(tfoot) tfoot.style.display='none';
+    ['sum-pm-contract','sum-pm-paid','sum-pm-balance','sum-pm-retention'].forEach(id=>setCard(id,0));
+    return;
+  }
+
+  // Calculate totals across visible rows
+  let sumContract=0, sumPaid=0, sumRetention=0;
+  let rowNum=0;
+
+  tbody.innerHTML=visible.map(({e,i})=>{
+    rowNum++;
+    // Use natural key for all calculations — immune to entryIndex issues
+    const eKey          = projectKey(e);
+    const totalClaimed  = getClaimedMapAll()[eKey]   || 0;
+    const retentionSum  = getRetentionMap()[eKey]    || 0;
+    const contractRemain = e.contract - totalClaimed;
+    sumContract  += e.contract;
+    sumPaid      += totalClaimed;
+    sumRetention += retentionSum;
+    return `<tr title="Debug key: ${eKey}">
+      <td>${rowNum}</td><td class="fw-600">${e.project}</td><td>${e.scope}</td><td>${e.worktype}</td><td>${e.houseno||'—'}</td>
+      <td class="fw-600">$ ${fmt(e.contract)}</td>
+      <td>${e.retention||0}%</td>
+      <td>${e.engineer||'—'}</td><td>${e.worker||'—'}</td>
+      <td class="color-orange fw-600">$ ${fmt(totalClaimed)}</td>
+      <td class="${contractRemain>=0?'color-green':'color-red'} fw-600">$ ${fmt(contractRemain)}</td>
+      <td class="color-purple fw-600">$ ${fmt(retentionSum)}</td>
+      <td class="pm-only">${isPM()?`<div style="display:flex;gap:4px;flex-wrap:wrap;">
+        <button class="btn btn-sm btn-primary" onclick="openEditProject(${i})">✏️ Edit</button>
+        <button class="btn btn-sm" style="background:#7a5c00;color:#fff" onclick="openTransferModal(${i})">🔄 Transfer</button>
+        <button class="btn btn-sm btn-accent" onclick="deleteEntry('project',${i})">Delete</button>
+      </div>`:''}</td>
+    </tr>`;
+  }).join('');
+
+  const sumBalance = sumContract - sumPaid;
+
+  // ── Update summary cards ──────────────────────────────────────────────
+  setCard('sum-pm-contract',  sumContract,  false);
+  setCard('sum-pm-paid',      sumPaid,      false);
+  setCard('sum-pm-balance',   sumBalance,   sumBalance < 0);
+  setCard('sum-pm-retention', sumRetention, false);
+
+  // ── Update table footer ───────────────────────────────────────────────
+  if(tfoot){
+    tfoot.style.display='';
+    document.getElementById('foot-contract') .textContent = `$ ${fmt(sumContract)}`;
+    document.getElementById('foot-paid')     .textContent = `$ ${fmt(sumPaid)}`;
+    document.getElementById('foot-balance')  .textContent = `$ ${fmt(sumBalance)}`;
+    document.getElementById('foot-retention').textContent = `$ ${fmt(sumRetention)}`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  PAGE 2 — LABOR MASTER
+// ══════════════════════════════════════════════════════
+async function addLaborEntry(){
+  if(!isPM())return;
+  const name=document.getElementById('lm-name').value.trim();
+  const phone=document.getElementById('lm-phone').value.trim();
+  if(!name){showToast('Enter labor name.','error');return;}
+  if(laborEntries.find(l=>l.name.toLowerCase()===name.toLowerCase())){showToast('Already registered.','error');return;}
+  setBusy('btn-add-labor',true);
+  try{
+    // Register labor AND create a login (default password 1234)
+    await api({action:'addLabor',data:{name,phone}});
+    laborEntries.push({name,phone});renderLMTable();clearLMForm();refreshPMDropdowns();
+    populateLaborLoginDropdown();
+    showToast('Labor registered! Login password: 1234');
+  }catch(e){showToast('Save failed: '+e.message,'error');}
+  finally{setBusy('btn-add-labor',false);}
+}
+
+async function addFinanceUser(){
+  if(!isPM())return;
+  const name=document.getElementById('req-finance-name').value.trim();
+  const pass=document.getElementById('req-finance-pass').value.trim();
+  if(!name||!pass){showToast('Enter username and password.','error');return;}
+  setBusy('btn-add-finance',true);
+  try{
+    await api({action:'addFinanceUser',username:name,password:pass});
+    document.getElementById('req-finance-name').value='';
+    document.getElementById('req-finance-pass').value='';
+    showToast(`Finance user "${name}" created!`);
+  }catch(e){showToast('Failed: '+e.message,'error');}
+  finally{setBusy('btn-add-finance',false);}
+}
+function clearLMForm(){document.getElementById('lm-name').value='';document.getElementById('lm-phone').value='';}
+// Get labor payment breakdown: approved (to be paid) vs paid
+function getLaborAmounts(laborName){
+  let toBePaid=0, paid=0;
+  Object.values(paymentRequests).forEach(reqs=>(reqs||[]).forEach(r=>{
+    if(s(r.worker)!==s(laborName)) return;
+    // Use netPay (after material cut) if available, otherwise fall back to amtToPay
+    const net = r.netPay!==undefined && r.netPay!==null ? r.netPay : (r.amtToPay||0);
+    if(r.status==='approved') toBePaid+=net;
+    if(r.status==='paid')     paid    +=net;
+  }));
+  return {toBePaid, paid};
+}
+function renderLMTable(){
+  const tbody=document.getElementById('lm-table-body');
+  if(!laborEntries.length){tbody.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-icon">📭</div>No records yet.</div></td></tr>';return;}
+  tbody.innerHTML=laborEntries.map((l,i)=>{
+    const a=projectEntries.filter(e=>e.worker===l.name);
+    const tc=a.reduce((s,e)=>s+e.contract,0);
+    const {toBePaid,paid}=getLaborAmounts(l.name);
+    const bal=tc-toBePaid-paid;
+    return `<tr>
+      <td>${i+1}</td><td class="fw-600">${l.name}</td><td>${l.phone||'—'}</td>
+      <td>${[...new Set(a.map(e=>e.project))].join(', ')||'—'}</td>
+      <td>${[...new Set(a.map(e=>e.scope))].join(', ')||'—'}</td>
+      <td>${[...new Set(a.map(e=>e.worktype))].join(', ')||'—'}</td>
+      <td class="fw-600">$ ${fmt(tc)}</td>
+      <td class="td-paid color-green fw-600">$ ${fmt(toBePaid)}</td>
+      <td style="color:#1a5c3a;font-weight:600">$ ${fmt(paid)}</td>
+      <td class="${bal>=0?'color-green':'color-red'} fw-600">$ ${fmt(bal)}</td>
+      <td class="pm-only">${isPM()?`<button class="btn btn-sm btn-accent" onclick="deleteEntry('labor',${i})">Delete</button>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  PAGE 3 — REQUESTER
+// ══════════════════════════════════════════════════════
+async function addEngineer(){
+  if(!isPM())return;
+  const name=document.getElementById('req-name').value.trim();
+  if(!name){showToast('Enter engineer name.','error');return;}
+  if(engineers.find(e=>e.name.toLowerCase()===name.toLowerCase())){showToast('Already registered.','error');return;}
+  setBusy('btn-add-engineer',true);
+  try{
+    await api({action:'addEngineer',data:{name,project:'',scope:''}});
+    engineers.push({name,project:'',scope:''});
+    paymentRequests[engineers.length-1]=[];
+    retentionClaims[engineers.length-1]=[];
+    renderEngGrid();refreshPMDropdowns();populateEngLoginDropdown();
+    document.getElementById('req-name').value='';
+    showToast('Engineer added! Default password: 1234');
+  }catch(e){showToast('Save failed: '+e.message,'error');}
+  finally{setBusy('btn-add-engineer',false);}
+}
+function renderEngGrid(){
+  const grid=document.getElementById('eng-grid'),empty=document.getElementById('eng-empty');
+  if(!engineers.length){grid.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const pm=isPM();
+  grid.innerHTML=engineers.map((e,i)=>{
+    const reqs=paymentRequests[i]||[];
+
+    const assignedProjects=projectsForEngineer(e.name);
+    const canView=pm||(currentRole==='engineer'&&currentEngIndex===i);
+    return `<div class="eng-card">
+      <div class="eng-name">👤 ${e.name}</div>
+      <div class="eng-meta">
+        ${assignedProjects.length
+          ?`<span style="font-weight:600;color:var(--text)">Projects:</span><div class="eng-tags">${assignedProjects.map(p=>`<span class="eng-tag">🏗️ ${p}</span>`).join('')}</div>`
+          :'<span style="font-style:italic">No projects assigned yet</span>'}
+        <span style="margin-top:6px">
+          📄 ${reqs.length} total &nbsp;|&nbsp;
+          🔍 ${reqs.filter(r=>r.status==='review').length} pending &nbsp;|&nbsp;
+          ✅ ${reqs.filter(r=>r.status==='approved').length} approved &nbsp;|&nbsp;
+          💵 ${reqs.filter(r=>r.status==='paid').length} paid
+        </span>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+        ${canView?`<button class="btn btn-primary btn-sm" onclick="openPaymentPage(${i})">📝 Payment</button><button class="btn btn-purple btn-sm" onclick="openRetentionPage(${i})">💰 Retention</button>`:'<span style="font-size:.78rem;color:var(--muted)">🔒 Not your account</span>'}
+        ${pm?`<button class="btn btn-sm btn-accent" onclick="deleteEntry('engineer',${i})">Delete</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  PAGE 4 — PM REVIEW
+// ══════════════════════════════════════════════════════
+function renderPMReview(){
+  renderPMRetentionClaims(); // always refresh retention section too
+  const tbody=document.getElementById('review-table-body');
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-15);
+  const rows=[];
+  engineers.forEach((eng,i)=>{
+    (paymentRequests[i]||[]).forEach(r=>{
+      // Show review AND approved (approved items can be marked as paid)
+      if(r.status!=='review'&&r.status!=='approved') return;
+      if(r.date&&new Date(r.date)<cutoff) return;
+      rows.push({...r,engineerName:eng.name,engIdx:i});
+    });
+  });
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="14"><div class="empty"><div class="empty-icon">📋</div>No review or approved requests in the last 15 days.</div></td></tr>';return;}
+  tbody.innerHTML=rows.map((r,i)=>{
+    // Always compute from raw fields — never trust stored/shifted amtToPay
+    const amt      = parseFloat(r.amount)||0;
+    const retPct   = parseFloat(r.retentionPct)||0;
+    const retStored= parseFloat(r.retention)||0;
+    const calcRet  = parseFloat((amt*retPct/100).toFixed(2));
+    const truRet   = (retStored>amt||retStored<0) ? calcRet : retStored;
+    const atp      = parseFloat((amt - truRet).toFixed(2));
+    const matCut   = parseFloat(r.materialCut)||0;
+    const netPay   = parseFloat((atp - matCut).toFixed(2));
+    return `<tr>
+    <td>${i+1}</td><td class="fw-600">${r.engineerName}</td><td>${r.date}</td>
+    <td class="fw-600">${r.project}</td><td>${r.scope}</td><td>${r.worktype}</td>
+    <td>${r.houseno||'—'}</td><td>${r.worker||'—'}</td>
+    <td>$ ${fmt(r.contract)}</td>
+    <td class="fw-600 color-orange">$ ${fmt(r.amount)}</td>
+    <td class="td-retention color-purple fw-600">$ ${fmt(r.retention)}</td>
+    <td style="background:#fff8f0;">
+      <input type="number" min="0" step="0.01"
+        value="${matCut||''}"
+        placeholder="0.00"
+        style="width:90px;height:28px;padding:0 6px;border:1px solid #d0a080;border-radius:5px;font-family:inherit;font-size:.84rem;"
+        onchange="saveMaterialCut('${r.rowId}',${r.engIdx},this)"
+        title="Material cut deducted from labor payment">
+    </td>
+    <td class="td-paid fw-600" style="color:${netPay>=0?'var(--accent3)':'var(--danger)'}">$ ${fmt(netPay)}</td>
+    <td>${(r.photos&&r.photos.length)
+      ?`<button class="btn btn-sm btn-outline" style="color:var(--accent2)"
+           onclick="viewRequestPhotos(${r.engIdx},paymentRequests[${r.engIdx}].findIndex(x=>x.rowId==='${r.rowId}'))">📷 ${r.photos.length}</button>`
+      :'—'}</td>
+    <td>
+      <select class="status-select ${r.status}" onchange="updateStatusFromReview(${r.engIdx},'${r.rowId}',this)">
+        <option value="review"   ${r.status==='review'   ?'selected':''}>🔍 Review</option>
+        <option value="approved" ${r.status==='approved' ?'selected':''}>✅ Approved</option>
+        <option value="rejected" ${r.status==='rejected' ?'selected':''}>❌ Rejected</option>
+        <option value="paid"     ${r.status==='paid'     ?'selected':''}>💵 Paid</option>
+      </select>
+    </td>
+  </tr>`;}).join('');
+}
+
+async function updateStatusFromReview(engIdx,rowId,sel){
+  if(!isPM())return;
+  const newStatus=sel.value;
+  const oldStatus=sel.dataset.prev||'review';
+  sel.disabled=true;
+  try{
+    await api({action:'updateStatus',rowId,status:newStatus});
+    const req=paymentRequests[engIdx]?.find(r=>r.rowId===rowId);
+    if(req) req.status=newStatus;
+    sel.dataset.prev=newStatus;
+    // Update the select styling in-place — no full re-render so status doesn't flicker back
+    sel.className='status-select '+newStatus;
+    invalidateMaps();
+    // Only re-render other tables, NOT PM Review itself (avoids the revert flicker)
+    renderLMTable();renderPMTable();renderEngGrid();
+    if(newStatus==='paid') showToast('✅ Marked as Paid — Labor Master updated!','success');
+    else showToast('Status updated: '+newStatus);
+  }catch(e){sel.value=oldStatus;showToast('Update failed: '+e.message,'error');}
+  finally{sel.disabled=false;}
+}
+
+// ── One-click fix for Payments sheet column order ─────────────────────────
+async function runFixSheet(){
+  if(!isPM()) return;
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '🔧 Fixing…';
+  try{
+    const res = await api({action:'fixPaymentsSheet'});
+    if(res.ok){
+      showToast('✅ '+res.message,'success');
+      await reloadData(); // reload to reflect fixed data
+    } else {
+      showToast('Fix failed: '+(res.error||'Unknown error'),'error');
+    }
+  }catch(e){ showToast('Fix failed: '+e.message,'error'); }
+  finally{ btn.disabled=false; btn.textContent='🔧 Fix Sheet'; }
+}
+
+// Save material cut — called when PM changes the input field
+async function saveMaterialCut(rowId, engIdx, input){
+  if(!isPM()) return;
+  const val = parseFloat(input.value)||0;
+  if(val < 0){ input.value='0'; return; }
+  input.style.borderColor='#d0a080';
+  try{
+    const saved = await api({action:'updateMaterialCut', rowId, materialCut:val});
+    // Update in-memory record using server-calculated values
+    const req = paymentRequests[parseInt(engIdx)]?.find(r=>r.rowId===rowId);
+    if(req){
+      req.materialCut = val;
+      // Use server-recalculated amtToPay and netPay (fixes column-shift issues)
+      if(saved.amtToPay!==undefined) req.amtToPay = saved.amtToPay;
+      req.netPay = saved.netPay!==undefined ? saved.netPay : parseFloat((req.amtToPay - val).toFixed(2));
+    }
+    input.style.borderColor='var(--accent3)';
+    // Re-render net pay cell using server-returned netPay (column-shift safe)
+    const row = input.closest('tr');
+    if(row){
+      const netCell = row.querySelector('.td-paid');
+      if(netCell){
+        const netPay = saved.netPay!==undefined ? saved.netPay
+                     : req ? parseFloat((req.amtToPay - val).toFixed(2)) : 0;
+        netCell.textContent = `$ ${fmt(netPay)}`;
+        netCell.style.color = netPay>=0?'var(--accent3)':'var(--danger)';
+      }
+    }
+    setTimeout(()=>{ input.style.borderColor='#d0a080'; },1500);
+    invalidateMaps();
+    renderLMTable();
+  }catch(e){
+    input.style.borderColor='var(--danger)';
+    showToast('Save failed: '+e.message,'error');
+  }
+}
+
+// ── Shared CSV download helper — UTF-8 BOM for Excel Khmer support ─────────
+function downloadCSV(rows, filename){
+  // UTF-8 BOM (﻿) tells Excel to open as UTF-8 → Khmer renders correctly
+  const csv = '﻿' + rows.map(row=>
+    row.map(v=>`"${String(v===null||v===undefined?'':v).replace(/"/g,'""')}"`).join(',')
+  ).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Create AP from approved retention claims ──────────────────────────────
+async function createRetentionAP(){
+  if(!isPM()) return;
+
+  // Collect approved retention claims not yet in any AP
+  const alreadyInAP = new Set(
+    approvals.flatMap(a=>(a.items||[]).map(i=>i.rowId))
+  );
+
+  const items = [];
+  engineers.forEach((eng, i) => {
+    (retentionClaims[i]||[]).forEach(c => {
+      if(c.status !== 'approved') return;
+      if(alreadyInAP.has(c.rowId)) return;
+      items.push({
+        rowId        : c.rowId,
+        engineerName : eng.name,
+        worker       : c.worker || '—',
+        project      : c.project,
+        scope        : c.scope,
+        worktype     : c.worktype,
+        houseno      : c.houseno || '',
+        amount       : c.retentionAmt,
+        retention    : 0,           // retention claim itself has no further retention
+        materialCut  : 0,
+        netPay       : c.retentionAmt,
+        isRetention  : true
+      });
+    });
+  });
+
+  if(!items.length){
+    showToast('No approved retention claims to include in an AP.','error');
+    return;
+  }
+
+  const confirmed = confirm(
+    `Create a Retention AP with ${items.length} claim(s)?
+` +
+    `Total Retention Amount: $ ${fmt(items.reduce((t,i)=>t+i.netPay,0))}`
+  );
+  if(!confirmed) return;
+
+  try{
+    const res = await apiPost({action:'createApproval', createdBy:currentUser, items,
+      apType:'retention'});
+    if(!res.ok) throw new Error(res.error);
+    approvals.unshift({
+      apId        : res.apId,
+      apNumber    : res.apNumber,
+      createdDate : res.createdDate,
+      createdBy   : currentUser,
+      status      : 'to_be_paid',
+      totalAmount : items.reduce((t,i)=>t+i.netPay,0),
+      items,
+      apType      : 'retention'
+    });
+    renderAPList();
+    showToast(`${res.apNumber} (Retention) created with ${items.length} claim(s)!`,'success');
+    showPage('labor-master');
+  }catch(e){
+    showToast('Failed to create Retention AP: '+e.message,'error');
+  }
+}
+
+// ── PM sees ALL retention claims from all engineers ──────────────────────
+function renderPMRetentionClaims(){
+  const tbody = document.getElementById('pm-retention-body');
+  if (!tbody) return;
+
+  // Collect all retention claims across all engineers
+  const rows = [];
+  engineers.forEach((eng, i) => {
+    (retentionClaims[i]||[]).forEach(c => {
+      rows.push({...c, engineerName: eng.name, engIdx: i});
+    });
+  });
+
+  // Update count badge
+  const pending = rows.filter(r=>r.status==='review').length;
+  const countEl = document.getElementById('ret-claim-count');
+  if (countEl) countEl.textContent = pending > 0
+    ? `${pending} pending · ${rows.length} total`
+    : `${rows.length} total`;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty"><div class="empty-icon">💰</div>No retention claims yet.</div></td></tr>';
+    return;
+  }
+
+  const statusLabels = {review:'🔍 Review', approved:'✅ Approved', rejected:'❌ Rejected'};
+  tbody.innerHTML = rows.map((c, idx) => `<tr class="${c.status==='review'?'':''}">
+    <td>${idx+1}</td>
+    <td class="fw-600">${c.engineerName}</td>
+    <td>${c.date ? String(c.date).slice(0,10) : '—'}</td>
+    <td class="fw-600">${c.project}</td>
+    <td>${c.scope}</td>
+    <td>${c.worktype}</td>
+    <td>${c.houseno||'—'}</td>
+    <td>${c.worker||'—'}</td>
+    <td class="color-purple fw-600">$ ${fmt(c.retentionAmt)}</td>
+    <td>
+      <select class="status-select ${c.status}"
+              onchange="updateRetentionStatusPM(${c.engIdx},this,'${c.rowId}')">
+        <option value="review"   ${c.status==='review'  ?'selected':''}>🔍 Review</option>
+        <option value="approved" ${c.status==='approved'?'selected':''}>✅ Approved</option>
+        <option value="rejected" ${c.status==='rejected'?'selected':''}>❌ Rejected</option>
+      </select>
+    </td>
+  </tr>`).join('');
+}
+
+// Update retention status from PM view (works across any engineer's claims)
+async function updateRetentionStatusPM(engIdx, sel, rowId) {
+  if (!isPM()) return;
+  const newStatus = sel.value;
+  sel.disabled = true;
+  try {
+    await api({action:'updateRetentionStatus', rowId, status:newStatus});
+    const claim = (retentionClaims[engIdx]||[]).find(c=>c.rowId===rowId);
+    if (claim) claim.status = newStatus;
+    sel.className = 'status-select ' + newStatus;
+    sel.disabled = false;
+    renderPMRetentionClaims();
+    showToast('Retention status updated: ' + newStatus);
+  } catch(e) {
+    sel.value = sel.dataset.prev || 'review';
+    sel.disabled = false;
+    showToast('Update failed: ' + e.message, 'error');
+  }
+}
+
+function downloadReviewExcel(){
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-15);
+  const rows=[['#','Engineer','Date','Project','Scope/Block','Work Type','House No','Worker',
+    'Contract (USD)','Request Amt (USD)','Retention (USD)','Material Cut (USD)','Net Pay (USD)','Status']];
+  let n=1;
+  engineers.forEach((eng,i)=>{
+    (paymentRequests[i]||[]).forEach(r=>{
+      // Export review AND approved (matching what PM sees on screen)
+      if(r.status!=='review'&&r.status!=='approved') return;
+      if(r.date&&new Date(r.date)<cutoff) return;
+      const amt    = parseFloat(r.amount)||0;
+      const retPct = parseFloat(r.retentionPct)||0;
+      const ret    = parseFloat(r.retention)||0;
+      const calcRet= parseFloat((amt*retPct/100).toFixed(2));
+      const truRet = (ret>amt||ret<0)?calcRet:ret;
+      const atp    = parseFloat((amt-truRet).toFixed(2));
+      const mc     = parseFloat(r.materialCut)||0;
+      const np     = parseFloat((atp-mc).toFixed(2));
+      rows.push([n++,eng.name,r.date,r.project,r.scope,r.worktype,r.houseno||'',
+        r.worker||'',r.contract,amt,truRet,mc,np,r.status]);
+    });
+  });
+  downloadCSV(rows,'PM_Review_'+new Date().toISOString().slice(0,10)+'.csv');
+  showToast('Downloaded — open with Excel (Khmer text supported)');
+}
+
+// ══════════════════════════════════════════════════════
+//  PAGE 5 — PAYMENT REQUEST
+// ══════════════════════════════════════════════════════
+function openPaymentPage(engIdx){
+  currentEngIndex=engIdx;currentPREntryIdx=null;
+  const eng=engineers[engIdx];
+  document.getElementById('payment-page-title').textContent=`Payment Request — ${eng.name}`;
+  document.getElementById('payment-eng-name-breadcrumb').textContent=eng.name;
+  document.getElementById('tab-payment').style.display='';
+  if(!paymentRequests[engIdx]) paymentRequests[engIdx]=[];
+  populatePRProjects();resetPRCascade();updatePaymentSummary();renderPRTable();
+  showPage('payment');
+}
+
+function resetDropdown(id,placeholder){
+  document.getElementById(id).innerHTML=`<option value="">${placeholder}</option>`;
+}
+function populatePRProjects(){
+  if(currentEngIndex===null)return;
+  const engName=s(engineers[currentEngIndex].name);
+  const projects=projectsForEngineer(engName);
+  populateSelect('pr-project',projects,'-- Select Project --');
+  resetDropdown('pr-scope','-- Select Scope/Block --');
+  resetDropdown('pr-worktype','-- Select Work Type --');
+  resetDropdown('pr-houseno','-- Select House No --');
+  clearPRAutoFill();
+}
+
+function onPRProjectChange(){
+  if(currentEngIndex===null)return;
+  const proj=s(document.getElementById('pr-project').value);
+  const engName=s(engineers[currentEngIndex].name);
+  const scopes=proj?scopesForPE(proj,engName):[];
+  populateSelect('pr-scope',scopes,'-- Select Scope/Block --');
+  resetDropdown('pr-worktype','-- Select Work Type --');
+  resetDropdown('pr-houseno','-- Select House No --');
+  clearPRAutoFill();
+}
+function onPRScopeChange(){
+  if(currentEngIndex===null)return;
+  const proj=s(document.getElementById('pr-project').value);
+  const scope=s(document.getElementById('pr-scope').value);
+  const engName=s(engineers[currentEngIndex].name);
+  const wts=(proj&&scope)?worktypesForPSE(proj,scope,engName):[];
+  populateSelect('pr-worktype',wts,'-- Select Work Type --');
+  resetDropdown('pr-houseno','-- Select House No --');
+  clearPRAutoFill();
+}
+function onPRWorktypeChange(){
+  if(currentEngIndex===null)return;
+  const proj=s(document.getElementById('pr-project').value);
+  const scope=s(document.getElementById('pr-scope').value);
+  const wt=s(document.getElementById('pr-worktype').value);
+  const engName=s(engineers[currentEngIndex].name);
+  const houses=(proj&&scope&&wt)?housenosForPSWE(proj,scope,wt,engName):[];
+  populateSelect('pr-houseno',houses,'-- Select House No --');
+  clearPRAutoFill();
+}
+function onPRHouseChange(){
+  if(currentEngIndex===null)return;
+  const proj=s(document.getElementById('pr-project').value);
+  const scope=s(document.getElementById('pr-scope').value);
+  const wt=s(document.getElementById('pr-worktype').value);
+  const houseno=s(document.getElementById('pr-houseno').value);
+  const engName=s(engineers[currentEngIndex].name);
+  if(proj&&scope&&wt&&houseno){
+    const entry=findEntry(proj,scope,wt,houseno,engName);
+    if(entry){
+      currentPREntryIdx=projectEntries.indexOf(entry);
+      document.getElementById('pr-worker').value=s(entry.worker);
+      document.getElementById('pr-contract-display').value=entry.contract||'';
+      document.getElementById('pr-retention-pct').value=entry.retention||'';
+    }else{
+      clearPRAutoFill();
+      showToast('No matching project entry found.','error');
+    }
+  }else clearPRAutoFill();
+  updatePaymentSummary();
+}
+function clearPRAutoFill(){
+  document.getElementById('pr-worker').value='';
+  document.getElementById('pr-contract-display').value='';
+  document.getElementById('pr-retention-pct').value='';
+  currentPREntryIdx=null;updatePaymentSummary();
+}
+function resetPRCascade(){
+  document.getElementById('pr-date').valueAsDate=new Date();
+  document.getElementById('pr-project').value='';
+  resetDropdown('pr-scope','-- Select Scope/Block --');
+  resetDropdown('pr-worktype','-- Select Work Type --');
+  resetDropdown('pr-houseno','-- Select House No --');
+  document.getElementById('pr-amount').value='';
+  clearPRAutoFill();
+}
+function clearPRForm(){populatePRProjects();resetPRCascade();}
+
+function updatePaymentSummary(){
+  const entry=currentPREntryIdx!==null?projectEntries[currentPREntryIdx]:null;
+  const contract=entry?entry.contract:0;
+  const retPct=entry?entry.retention:0;
+  const claimed=currentPREntryIdx!==null?getTotalClaimedForEntry(currentPREntryIdx):0;
+  const rem=contract-claimed;
+  const amount=parseFloat(document.getElementById('pr-amount').value)||0;
+  const thisRetention=parseFloat(((amount*retPct)/100).toFixed(2));
+  const thisPay=parseFloat((amount-thisRetention).toFixed(2));
+
+  document.getElementById('sum-contract').textContent=`$ ${fmt(contract)}`;
+  document.getElementById('sum-claimed').textContent =`$ ${fmt(claimed)}`;
+  const remEl=document.getElementById('sum-remaining');
+  remEl.textContent=`$ ${fmt(rem)}`;remEl.style.color=rem>=0?'var(--accent3)':'var(--danger)';
+  document.getElementById('sum-this-retention').textContent=`$ ${fmt(thisRetention)}`;
+  document.getElementById('sum-this-pay').textContent=`$ ${fmt(thisPay)}`;
+}
+
+// ══════════════════════════════════════════════════════
+//  BULK REQUEST MODE
+// ══════════════════════════════════════════════════════
+
+function setPRMode(mode) {
+  const isBulk = mode === 'bulk';
+  document.getElementById('bulk-request-card').style.display   = isBulk ? '' : 'none';
+  document.getElementById('single-request-card').style.display = isBulk ? 'none' : '';
+  document.getElementById('btn-mode-single').className = 'btn btn-sm ' + (isBulk ? 'btn-outline' : 'btn-primary');
+  document.getElementById('btn-mode-bulk').className   = 'btn btn-sm ' + (isBulk ? 'btn-primary' : 'btn-outline');
+  if (isBulk) {
+    document.getElementById('bulk-date').value = new Date().toISOString().slice(0,10);
+    // Initialise all cascading filters
+    populateBulkProjectFilter();
+    onBulkProjectChange(); // populates scope, clears downstream, renders table
+  }
+}
+
+function getBulkEntries() {
+  const eng = engineers[currentEngIndex]; if(!eng) return [];
+  return projectEntries.map((e,i)=>({...e,idx:i}))
+    .filter(e=>s(e.engineer)===s(eng.name));
+}
+
+function populateBulkProjectFilter() {
+  const entries = getBulkEntries();
+  const projects = [...new Set(entries.map(e=>e.project))].sort();
+  const sel = document.getElementById('bulk-project-filter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Projects</option>' +
+    projects.map(p=>`<option value="${p}">${p}</option>`).join('');
+  if(projects.includes(cur)) sel.value = cur;
+}
+
+function onBulkProjectChange() {
+  // Reset downstream filters
+  document.getElementById('bulk-scope-filter').innerHTML   = '<option value="">All Scopes</option>';
+  document.getElementById('bulk-worktype-filter').innerHTML= '<option value="">All Work Types</option>';
+  document.getElementById('bulk-houseno-filter').innerHTML = '<option value="">All House Nos</option>';
+  // Populate scope based on project
+  const proj = document.getElementById('bulk-project-filter').value;
+  const entries = getBulkEntries().filter(e=>!proj||s(e.project)===s(proj));
+  const scopes = [...new Set(entries.map(e=>e.scope))].sort();
+  document.getElementById('bulk-scope-filter').innerHTML = '<option value="">All Scopes</option>' +
+    scopes.map(v=>`<option value="${v}">${v}</option>`).join('');
+  renderBulkTable();
+}
+
+function onBulkScopeChange() {
+  document.getElementById('bulk-worktype-filter').innerHTML= '<option value="">All Work Types</option>';
+  document.getElementById('bulk-houseno-filter').innerHTML = '<option value="">All House Nos</option>';
+  const proj  = document.getElementById('bulk-project-filter').value;
+  const scope = document.getElementById('bulk-scope-filter').value;
+  const entries = getBulkEntries()
+    .filter(e=>(!proj||s(e.project)===s(proj)) && (!scope||s(e.scope)===s(scope)));
+  const worktypes = [...new Set(entries.map(e=>e.worktype))].sort();
+  document.getElementById('bulk-worktype-filter').innerHTML = '<option value="">All Work Types</option>' +
+    worktypes.map(v=>`<option value="${v}">${v}</option>`).join('');
+  renderBulkTable();
+}
+
+function onBulkWorktypeChange() {
+  document.getElementById('bulk-houseno-filter').innerHTML = '<option value="">All House Nos</option>';
+  const proj    = document.getElementById('bulk-project-filter').value;
+  const scope   = document.getElementById('bulk-scope-filter').value;
+  const wt      = document.getElementById('bulk-worktype-filter').value;
+  const entries = getBulkEntries()
+    .filter(e=>(!proj||s(e.project)===s(proj))&&(!scope||s(e.scope)===s(scope))&&(!wt||s(e.worktype)===s(wt)));
+  const housenums = [...new Set(entries.map(e=>e.houseno||''))].filter(Boolean).sort();
+  document.getElementById('bulk-houseno-filter').innerHTML = '<option value="">All House Nos</option>' +
+    housenums.map(v=>`<option value="${v}">${v}</option>`).join('');
+  renderBulkTable();
+}
+
+function bulkClearFilters() {
+  ['bulk-project-filter','bulk-scope-filter','bulk-worktype-filter','bulk-houseno-filter']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.selectedIndex=0; });
+  populateBulkProjectFilter();
+  renderBulkTable();
+}
+
+function renderBulkTable() {
+  const eng = engineers[currentEngIndex]; if(!eng) return;
+  const proj = s(document.getElementById('bulk-project-filter')?.value||'');
+  const scope= s(document.getElementById('bulk-scope-filter')?.value||'');
+  const wt   = s(document.getElementById('bulk-worktype-filter')?.value||'');
+  const hn   = s(document.getElementById('bulk-houseno-filter')?.value||'');
+  const claimedAll = getClaimedMapAll();
+  let entries = getBulkEntries()
+    .filter(e=>(!proj||s(e.project)===proj)&&(!scope||s(e.scope)===scope)
+                &&(!wt||s(e.worktype)===wt)&&(!hn||s(e.houseno||'')===hn));
+  const tbody = document.getElementById('bulk-table-body');
+  if(!entries.length){
+    tbody.innerHTML='<tr><td colspan="12"><div class="empty"><div class="empty-icon">📋</div>No assigned scopes.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML=entries.map((e,i)=>{
+    const eKey   = projectKey(e);
+    const claimed= claimedAll[eKey]||0;
+    const remain = parseFloat((e.contract-claimed).toFixed(2));
+    const retPct = parseFloat(e.retention)||0;
+    const preAmt = remain>0 ? remain.toFixed(2) : '';
+    return `<tr id="bulk-row-${i}" data-idx="${e.idx}">
+      <td><input type="checkbox" class="bulk-chk" data-row="${i}"
+          onchange="bulkUpdateSummary()" ${preAmt?'checked':''}></td>
+      <td class="fw-600">${e.project}</td><td>${e.scope}</td>
+      <td>${e.worktype}</td><td>${e.houseno||'—'}</td><td>${e.worker||'—'}</td>
+      <td>$ ${fmt(e.contract)}</td>
+      <td class="color-orange">$ ${fmt(claimed)}</td>
+      <td class="${remain>0?'color-green':'color-red'} fw-600">$ ${fmt(remain)}</td>
+      <td>
+        <input type="number" min="0" step="0.01" id="bulk-amt-${i}"
+          value="${preAmt}" placeholder="0.00"
+          data-contract="${e.contract}" data-retain-pct="${retPct}" data-remain="${remain}"
+          style="width:110px;padding:6px 8px;border:1px solid var(--border);border-radius:5px;font-family:inherit;font-size:.83rem"
+          oninput="bulkCalcRow(${i});bulkUpdateSummary()">
+      </td>
+      <td id="bulk-ret-${i}" class="color-purple fw-600">$ 0.00</td>
+      <td id="bulk-net-${i}" class="color-green fw-600">$ 0.00</td>
+    </tr>`;
+  }).join('');
+  entries.forEach((_,i)=>bulkCalcRow(i));
+  bulkUpdateSummary();
+  document.getElementById('bulk-check-all').checked=true;
+}
+
+function bulkCalcRow(i){
+  const inp=document.getElementById('bulk-amt-'+i); if(!inp) return;
+  const amt=parseFloat(inp.value)||0;
+  const retPct=parseFloat(inp.dataset.retainPct)||0;
+  const ret=parseFloat((amt*retPct/100).toFixed(2));
+  const net=parseFloat((amt-ret).toFixed(2));
+  const re=document.getElementById('bulk-ret-'+i);
+  const ne=document.getElementById('bulk-net-'+i);
+  if(re) re.textContent=`$ ${fmt(ret)}`;
+  if(ne){ne.textContent=`$ ${fmt(net)}`;ne.style.color=net>=0?'var(--accent3)':'var(--danger)';}
+}
+
+function bulkUpdateSummary(){
+  let sel=0,amt=0,net=0;
+  document.querySelectorAll('.bulk-chk').forEach(chk=>{
+    if(!chk.checked) return;
+    const i=chk.dataset.row;
+    const a=parseFloat(document.getElementById('bulk-amt-'+i)?.value)||0;
+    const rp=parseFloat(document.getElementById('bulk-amt-'+i)?.dataset.retainPct)||0;
+    sel++; amt+=a; net+=a-parseFloat((a*rp/100).toFixed(2));
+  });
+  document.getElementById('bulk-selected-count').textContent=sel;
+  document.getElementById('bulk-total-request').textContent=`$ ${fmt(amt)}`;
+  document.getElementById('bulk-total-net').textContent=`$ ${fmt(net)}`;
+}
+
+function bulkToggleAll(cb){
+  document.querySelectorAll('.bulk-chk').forEach(c=>c.checked=cb.checked);
+  bulkUpdateSummary();
+}
+
+function bulkFillPercent(){
+  document.querySelectorAll('[id^="bulk-amt-"]').forEach(inp=>{
+    const remain=parseFloat(inp.dataset.remain)||0;
+    if(remain>0){
+      inp.value=remain.toFixed(2);
+      const i=inp.id.replace('bulk-amt-','');
+      bulkCalcRow(parseInt(i));
+      const chk=document.querySelector(`.bulk-chk[data-row="${i}"]`);
+      if(chk) chk.checked=true;
+    }
+  });
+  bulkUpdateSummary();
+}
+
+async function submitBulkRequests(){
+  const eng=engineers[currentEngIndex]; if(!eng) return;
+  const date=document.getElementById('bulk-date').value;
+  if(!date){showToast('Select a date first','error');return;}
+  const toSubmit=[];
+  document.querySelectorAll('.bulk-chk').forEach(chk=>{
+    if(!chk.checked) return;
+    const i=chk.dataset.row;
+    const amtInp=document.getElementById('bulk-amt-'+i); if(!amtInp) return;
+    const amt=parseFloat(amtInp.value)||0; if(amt<=0) return;
+    const rowIdx=parseInt(document.getElementById('bulk-row-'+i).dataset.idx);
+    const entry=projectEntries[rowIdx]; if(!entry) return;
+    const retPct=parseFloat(entry.retention)||0;
+    const ret=parseFloat((amt*retPct/100).toFixed(2));
+    const atp=parseFloat((amt-ret).toFixed(2));
+    toSubmit.push({entry,rowIdx,amt,ret,retPct,atp,date});
+  });
+  if(!toSubmit.length){showToast('No rows selected with amount > 0','error');return;}
+  if(!confirm(`Submit ${toSubmit.length} request(s)?
+Total: $ ${fmt(toSubmit.reduce((t,r)=>t+r.amt,0))}`)) return;
+  const btn=document.getElementById('btn-bulk-submit');
+  btn.disabled=true;
+  document.getElementById('bulk-progress').style.display='';
+  let done=0;
+  for(const item of toSubmit){
+    document.getElementById('bulk-progress-text').textContent=
+      `Submitting ${done+1}/${toSubmit.length}: ${item.entry.scope}/${item.entry.houseno||''}…`;
+    document.getElementById('bulk-progress-bar').style.width=`${Math.round(done/toSubmit.length*100)}%`;
+    try{
+      const res=await api({action:'addPayment',data:{
+        engineerName:eng.name,date:item.date,
+        project:item.entry.project,scope:item.entry.scope,
+        worktype:item.entry.worktype,houseno:item.entry.houseno||'',
+        worker:item.entry.worker||'',contract:item.entry.contract,
+        amount:item.amt,retentionPct:item.retPct,retention:item.ret,
+        amtToPay:item.atp,materialCut:0,netPay:item.atp,
+        entryIndex:item.rowIdx,status:'review',photoUrls:''
+      }});
+      if(!res.ok) throw new Error(res.error||'Failed');
+      if(!paymentRequests[currentEngIndex]) paymentRequests[currentEngIndex]=[];
+      paymentRequests[currentEngIndex].push({
+        engineerName:eng.name,date:item.date,
+        project:item.entry.project,scope:item.entry.scope,
+        worktype:item.entry.worktype,houseno:item.entry.houseno||'',
+        worker:item.entry.worker||'',contract:item.entry.contract,
+        amount:item.amt,retentionPct:item.retPct,retention:item.ret,
+        amtToPay:item.atp,materialCut:0,netPay:item.atp,
+        entryIndex:item.rowIdx,status:'review',
+        rowId:res.rowId||('bulk-'+Date.now()),photos:[]
+      });
+      done++;
+    }catch(e){
+      showToast(`Row ${done+1} failed: ${e.message}`,'error');
+    }
+  }
+  document.getElementById('bulk-progress-bar').style.width='100%';
+  document.getElementById('bulk-progress-text').textContent=`✅ Done: ${done}/${toSubmit.length} submitted`;
+  invalidateMaps();
+  renderPRTable();renderPMTable();renderLMTable();
+  btn.disabled=false;
+  showToast(`✅ ${done} request(s) submitted!`,'success');
+  setTimeout(()=>{document.getElementById('bulk-progress').style.display='none';renderBulkTable();},2500);
+}
+
+async function submitPaymentRequest(){
+  if(currentEngIndex===null)return;
+  const date=document.getElementById('pr-date').value;
+  const project=document.getElementById('pr-project').value;
+  const scope=document.getElementById('pr-scope').value;
+  const worktype=document.getElementById('pr-worktype').value;
+  const houseno=document.getElementById('pr-houseno').value;
+  const worker=document.getElementById('pr-worker').value;
+  const entry=currentPREntryIdx!==null?projectEntries[currentPREntryIdx]:null;
+  const contract=entry?entry.contract:0;
+  const retentionPct=entry?entry.retention:0;
+  const amount=parseFloat(document.getElementById('pr-amount').value)||0;
+
+  if(!date||!project||!scope||!worktype||!houseno){showToast('Please complete all selections.','error');return;}
+  if(amount<=0){showToast('Enter a valid request amount.','error');return;}
+  const claimed=currentPREntryIdx!==null?getTotalClaimedForEntry(currentPREntryIdx):0;
+  if(contract>0&&amount>contract-claimed){showToast(`Exceeds remaining: $ ${fmt(contract-claimed)}`,'error');return;}
+
+  const retention=parseFloat(((amount*retentionPct)/100).toFixed(2));
+  const amtToPay=parseFloat((amount-retention).toFixed(2));
+
+  setBusy('btn-submit-pr',true);
+  const btn=document.getElementById('btn-submit-pr');
+  const progressWrap=document.getElementById('pr-upload-progress');
+  const progressBar=document.getElementById('pr-upload-bar');
+  const statusEl=document.getElementById('pr-upload-status');
+  try{
+    // ── Step 1: Save payment record ───────────────────
+    btn.textContent='Saving…';
+    const res=await api({action:'addPayment',data:{
+      engineerName:engineers[currentEngIndex].name,
+      date,project,scope,worktype,houseno,worker,contract,amount,
+      retentionPct,retention,amtToPay,entryIndex:currentPREntryIdx,
+      status:'review',photoUrls:[]
+    }});
+    const rowId=res.rowId;
+    let uploadedPhotos=[];
+
+    // ── Step 2: Upload photos (chunked) ──────────────
+    if(pendingPhotos.length>0){
+      progressWrap.style.display='block';
+      const engName=engineers[currentEngIndex].name.replace(/[^a-z0-9]/gi,'_');
+      const subFolder=`${project} — ${scope}`;
+      const total=pendingPhotos.length;
+      for(let i=0;i<total;i++){
+        const p=pendingPhotos[i];
+        statusEl.textContent=`Photo ${i+1}/${total}: sending to Drive…`;
+        btn.textContent=`Photo ${i+1}/${total} uploading…`;
+        progressBar.style.width=`${Math.round((i/total)*100)}%`;
+        try{
+          const b64=await resizePhoto(p.file, 500, 0.65);
+          const fileName=`${engName}_${date.replace(/-/g,'')}_${rowId}_${i+1}.jpg`;
+          const result=await uploadPhotoChunked(b64, fileName, subFolder);
+          uploadedPhotos.push({viewUrl:result.viewUrl, thumbUrl:result.thumbUrl});
+          pendingPhotos[i].uploaded=true;
+          pendingPhotos[i].driveUrl=result.viewUrl;
+          pendingPhotos[i].thumbUrl=result.thumbUrl;
+          renderPhotoGrid();
+        }catch(photoErr){
+          showToast(`Photo ${i+1} failed: ${photoErr.message}`,'error');
+        }
+      }
+      progressBar.style.width='100%';
+      // Step 3: Update payment row with photo URLs
+      if(uploadedPhotos.length>0){
+        statusEl.textContent='Saving photo links…';
+        await api({action:'updatePhotoUrls',rowId,photoUrls:uploadedPhotos});
+      }
+      setTimeout(()=>{ progressWrap.style.display='none'; statusEl.textContent=''; },1500);
+    }
+
+    // Store in memory
+    paymentRequests[currentEngIndex].push({
+      date,project,scope,worktype,houseno,worker,contract,amount,
+      retentionPct,retention,amtToPay,entryIndex:currentPREntryIdx,
+      status:'review',rowId,photos:uploadedPhotos
+    });
+    invalidateMaps();
+
+    renderPRTable();updatePaymentSummary();renderEngGrid();renderLMTable();renderPMTable();
+    document.getElementById('pr-amount').value='';
+    document.getElementById('pr-project').value='';
+    resetDropdown('pr-scope','-- Select Scope/Block --');
+    resetDropdown('pr-worktype','-- Select Work Type --');
+    resetDropdown('pr-houseno','-- Select House No --');
+    clearPRAutoFill();
+    clearPendingPhotos();
+    const photoMsg=uploadedPhotos.length>0?` + ${uploadedPhotos.length} photo(s) saved to Drive`:'';
+    showToast(`Request submitted${photoMsg}!`);
+  }catch(e){showToast('Save failed: '+e.message,'error');}
+  finally{setBusy('btn-submit-pr',false);btn.textContent='Submit Request';}
+}
+
+function renderPRTable(){
+  if(currentEngIndex===null)return;
+  const reqs=paymentRequests[currentEngIndex]||[];
+  const tbody=document.getElementById('pr-table-body');
+  if(!reqs.length){tbody.innerHTML='<tr><td colspan="15"><div class="empty"><div class="empty-icon">📭</div>No requests yet.</div></td></tr>';return;}
+  const pm=isPM(),runningByKey={};
+  tbody.innerHTML=reqs.map((r,i)=>{
+    // Use natural key (project+scope+worktype+houseno) so remaining is per-row not per-index
+    const k=[s(r.project),s(r.scope),s(r.worktype),s(r.houseno),s(r.worker)].join('|');
+    // Rejected requests don't count against the contract remaining
+    if(r.status!=='rejected') runningByKey[k]=(runningByKey[k]||0)+r.amount;
+    const rem=r.contract-(runningByKey[k]||0);
+    const statusLabels={review:'🔍 Review',approved:'✅ Approved',rejected:'❌ Rejected',paid:'💵 Paid'};
+    // Always read-only badge — PM changes status only from PM Review page
+    const statusCell=`<span class="status-select ${r.status}">${statusLabels[r.status]||r.status}</span>`;
+    return `<tr>
+      <td>${i+1}</td><td>${r.date}</td><td class="fw-600">${r.project}</td>
+      <td>${r.scope}</td><td>${r.worktype}</td><td>${r.houseno||'—'}</td><td>${r.worker||'—'}</td>
+      <td>$ ${fmt(r.contract)}</td>
+      <td class="fw-600 color-orange">$ ${fmt(r.amount)}</td>
+      <td class="td-retention color-purple fw-600">$ ${fmt(r.retention)}</td>
+      <td style="color:#7a3a00;font-weight:600">$ ${fmt(r.materialCut||0)}</td>
+      <td class="td-paid fw-600" style="color:${(r.netPay||r.amtToPay)>=0?'var(--accent3)':'var(--danger)'}">$ ${fmt(r.netPay||r.amtToPay)}</td>
+      <td class="${rem>=0?'color-green':'color-red'} fw-600">$ ${fmt(rem)}</td>
+      <td>${(r.photos&&r.photos.length)
+        ?`<button class="btn btn-sm btn-outline" style="color:var(--accent2);white-space:nowrap"
+            onclick="viewRequestPhotos(${currentEngIndex},${i})">📷 ${r.photos.length}</button>`
+        :'<span style="color:var(--muted);font-size:.8rem;">—</span>'}</td>
+      <td>${statusCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateStatus(reqIdx,sel,rowId){
+  if(!isPM())return;
+  const newStatus=sel.value,old=paymentRequests[currentEngIndex][reqIdx].status;
+  sel.disabled=true;
+  try{
+    await api({action:'updateStatus',rowId,status:newStatus});
+    paymentRequests[currentEngIndex][reqIdx].status=newStatus;
+    sel.className='status-select '+newStatus;
+    invalidateMaps();
+    renderLMTable();updatePaymentSummary();renderPMTable();
+    if(newStatus==='paid') showToast('Marked as Paid — Labor Master updated!');
+    else showToast('Status updated!');
+  }catch(e){sel.value=old;showToast('Update failed: '+e.message,'error');}
+  finally{sel.disabled=false;}
+}
+
+// ══════════════════════════════════════════════════════
+//  PAGE 6 — RETENTION CLAIM
+// ══════════════════════════════════════════════════════
+function openRetentionPage(engIdx){
+  currentEngIndex=engIdx;
+  const eng=engineers[engIdx];
+  document.getElementById('ret-page-title').textContent=`Retention Claim — ${eng.name}`;
+  document.getElementById('ret-eng-name-breadcrumb').textContent=eng.name;
+  document.getElementById('tab-retention').style.display='';
+  if(!retentionClaims[engIdx]) retentionClaims[engIdx]=[];
+  renderRetentionTable();renderRetentionHistory();
+  showPage('retention');
+}
+
+function renderRetentionTable(){
+  if(currentEngIndex===null)return;
+  const eng=engineers[currentEngIndex];
+  const tbody=document.getElementById('ret-table-body');
+  // Get all project entries assigned to this engineer
+  const myEntries=projectEntries.map((e,i)=>({...e,idx:i})).filter(e=>e.engineer===eng.name);
+  if(!myEntries.length){tbody.innerHTML='<tr><td colspan="12"><div class="empty"><div class="empty-icon">💰</div>No assigned projects found.</div></td></tr>';return;}
+
+  const today=new Date();
+  tbody.innerHTML=myEntries.map(e=>{
+    const i=e.idx;
+    const totalApproved=getTotalApprovedForEntry(i);
+    const pctComplete=e.contract>0?Math.min(100,(totalApproved/e.contract*100)):0;
+    const retentionHeld=getTotalRetentionForEntry(i);
+    const firstDate=getFirstApprovedDate(i);
+    // Eligible if claimed >= 95% of contract (handles rounding/partial discrepancies)
+    const fullyClaimed = e.contract > 0 && totalApproved >= (e.contract * 0.95);
+
+    let threeMonthDate='—';
+    let eligible=false;
+    if(firstDate){
+      const rawD = String(firstDate).slice(0,10);
+      const d    = new Date(rawD + 'T00:00:00');
+      d.setMonth(d.getMonth()+3);
+      threeMonthDate = d.toISOString().slice(0,10);
+      eligible = fullyClaimed && today >= d && !isRetentionClaimed(i);
+    }
+    const alreadyClaimed = isRetentionClaimed(i);
+    // Find existing claim status for this entry
+    const existingClaim = Object.values(retentionClaims).flat()
+      .find(c => s(c.project)===s(e.project) && s(c.scope)===s(e.scope) &&
+                 s(c.worktype)===s(e.worktype) && s(c.houseno||'')===s(e.houseno||'') &&
+                 s(c.worker||'')===s(e.worker||''));
+    const claimStatus = existingClaim ? existingClaim.status : null;
+
+    const statusBadge = claimStatus==='approved'
+      ? `<span class="badge badge-approved">✅ Claimed & Approved</span>`
+      : claimStatus==='review'
+        ? `<span class="badge badge-pending">⏳ Pending Review</span>`
+        : claimStatus==='rejected'
+          ? `<span class="badge" style="background:#fee;color:#9b1c1c">❌ Rejected — can re-submit</span>`
+          : eligible
+            ? `<span class="badge badge-eligible">✅ Eligible</span>`
+            : `<span class="badge badge-pending">Not yet</span>`;
+
+    // Only show claim button if eligible AND no pending/approved claim
+    const canClaim = eligible && (!claimStatus || claimStatus==='rejected');
+    const claimBtn = canClaim
+      ? `<button class="btn btn-purple btn-sm" onclick="submitRetentionClaim(${i})">Claim Retention</button>`
+      : '—';
+
+    return `<tr class="${eligible&&!alreadyClaimed?'eligible-row':''}">
+      <td class="fw-600">${e.project}</td><td>${e.scope}</td><td>${e.worktype}</td><td>${e.houseno||'—'}</td>
+      <td>$ ${fmt(e.contract)}</td>
+      <td class="fw-600">$ ${fmt(totalApproved)}</td>
+      <td class="fw-600 ${pctComplete>=100?'color-green':'color-orange'}">${pctComplete.toFixed(1)}%</td>
+      <td class="color-purple fw-600">$ ${fmt(retentionHeld)}</td>
+      <td>${firstDate ? String(firstDate).slice(0,10) : '—'}</td>
+      <td>${threeMonthDate}</td>
+      <td>${statusBadge}</td>
+      <td>${claimBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function submitRetentionClaim(entryIdx){
+  if(currentEngIndex===null)return;
+  const entry=projectEntries[entryIdx];
+  if(!entry){showToast('Entry not found.','error');return;}
+  const retentionHeld=getTotalRetentionForEntry(entryIdx);
+  if(retentionHeld<=0){showToast('No retention to claim.','error');return;}
+  if(!confirm(`Submit retention claim of $ ${fmt(retentionHeld)} for ${entry.project} / ${entry.scope} / ${entry.worktype} / ${entry.houseno}?`))return;
+
+  try{
+    const today = new Date().toISOString().slice(0,10);
+    const res=await api({action:'addRetentionClaim',data:{
+      engineerName:engineers[currentEngIndex].name,
+      date:today,
+      project:entry.project,scope:entry.scope,worktype:entry.worktype,houseno:entry.houseno||'',
+      worker:entry.worker||'',
+      retentionAmt:retentionHeld,entryIndex:entryIdx,status:'review'
+    }});
+    retentionClaims[currentEngIndex].push({
+      date:today,
+      project:entry.project,scope:entry.scope,worktype:entry.worktype,houseno:entry.houseno||'',
+      worker:entry.worker||'',
+      retentionAmt:retentionHeld,entryIndex:entryIdx,status:'review',rowId:res.rowId
+    });
+    renderRetentionTable();renderRetentionHistory();
+    renderPMRetentionClaims();
+    showToast('Retention claim submitted! PM has been notified.');
+  }catch(e){showToast('Failed: '+e.message,'error');}
+}
+
+function renderRetentionHistory(){
+  if(currentEngIndex===null)return;
+  const claims=retentionClaims[currentEngIndex]||[];
+  const tbody=document.getElementById('ret-history-body');
+  if(!claims.length){tbody.innerHTML='<tr><td colspan="9"><div class="empty"><div class="empty-icon">📭</div>No retention claims yet.</div></td></tr>';return;}
+  const pm=isPM();
+  tbody.innerHTML=claims.map((c,i)=>{
+    const statusCell=pm
+      ?`<select class="status-select ${c.status}" onchange="updateRetentionStatus(${i},this,'${c.rowId}')">
+          <option value="review"   ${c.status==='review'  ?'selected':''}>🔍 Review</option>
+          <option value="approved" ${c.status==='approved'?'selected':''}>✅ Approved</option>
+          <option value="rejected" ${c.status==='rejected'?'selected':''}>❌ Rejected</option>
+        </select>`
+      :`<span class="status-select ${c.status}">${{review:'🔍 Review',approved:'✅ Approved',rejected:'❌ Rejected'}[c.status]}</span>`;
+    return `<tr>
+      <td>${i+1}</td><td>${c.date?String(c.date).slice(0,10):'—'}</td><td class="fw-600">${c.project}</td><td>${c.scope}</td>
+      <td>${c.worktype}</td><td>${c.houseno||'—'}</td>
+      <td class="color-purple fw-600">$ ${fmt(c.retentionAmt)}</td>
+      <td>${statusCell}</td>
+      <td class="pm-only">${pm?`<button class="btn btn-sm btn-accent" onclick="deleteEntry('retention',${i},'${c.rowId}')">Delete</button>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateRetentionStatus(idx,sel,rowId){
+  if(!isPM())return;
+  const newStatus=sel.value,old=retentionClaims[currentEngIndex][idx].status;
+  sel.disabled=true;
+  try{
+    await api({action:'updateRetentionStatus',rowId,status:newStatus});
+    retentionClaims[currentEngIndex][idx].status=newStatus;
+    sel.className='status-select '+newStatus;
+    renderRetentionTable();
+    showToast('Retention status updated!');
+  }catch(e){sel.value=old;showToast('Update failed: '+e.message,'error');}
+  finally{sel.disabled=false;}
+}
+
+// ══════════════════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════════════════
+function deleteEntry(type,index,rowId=null){
+  if(!isPM()){showToast('Only PM can delete.','error');return;}
+  deleteTarget={type,index,rowId};
+  document.getElementById('deleteModal').classList.add('open');
+}
+async function confirmDelete(){
+  const {type,index,rowId}=deleteTarget;
+  const btn=document.getElementById('confirm-delete-btn');
+  btn.disabled=true;btn.textContent='Deleting…';
+  try{
+    if(type==='project'){
+      await api({action:'deleteProject',index});
+      projectEntries.splice(index,1);renderPMTable();renderEngGrid();
+    }else if(type==='labor'){
+      await api({action:'deleteLabor',index});
+      laborEntries.splice(index,1);renderLMTable();refreshPMDropdowns();
+    }else if(type==='engineer'){
+      await api({action:'deleteEngineer',index});
+      engineers.splice(index,1);
+      const newPR={},newRC={};
+      Object.keys(paymentRequests).forEach(k=>{const ki=parseInt(k);if(ki<index)newPR[ki]=paymentRequests[ki];else if(ki>index)newPR[ki-1]=paymentRequests[ki];});
+      Object.keys(retentionClaims).forEach(k=>{const ki=parseInt(k);if(ki<index)newRC[ki]=retentionClaims[ki];else if(ki>index)newRC[ki-1]=retentionClaims[ki];});
+      paymentRequests=newPR;retentionClaims=newRC;
+      renderEngGrid();refreshPMDropdowns();populateEngLoginDropdown();
+    }else if(type==='payment'){
+      await api({action:'deletePayment',rowId});
+      paymentRequests[currentEngIndex].splice(index,1);
+      invalidateMaps();
+      renderPRTable();updatePaymentSummary();renderLMTable();renderPMTable();
+    }else if(type==='retention'){
+      await api({action:'deleteRetentionClaim',rowId});
+      retentionClaims[currentEngIndex].splice(index,1);
+      renderRetentionHistory();renderRetentionTable();
+    }
+    closeModal('deleteModal');showToast('Deleted!');
+  }catch(e){showToast('Delete failed: '+e.message,'error');}
+  finally{btn.disabled=false;btn.textContent='Delete';}
+}
+
+// ══════════════════════════════════════════════════════
+//  SHARED DROPDOWNS
+// ══════════════════════════════════════════════════════
+function refreshPMDropdowns(){
+  const es=document.getElementById('pm-engineer'),ce=es.value;
+  es.innerHTML='<option value="">-- Select Engineer --</option>'+engineers.map(e=>`<option value="${e.name}">${e.name}</option>`).join('');
+  if(engineers.find(e=>e.name===ce))es.value=ce;
+  const ws=document.getElementById('pm-worker'),cw=ws.value;
+  ws.innerHTML='<option value="">-- Select Worker --</option>'+laborEntries.map(l=>`<option value="${l.name}">${l.name}</option>`).join('');
+  if(laborEntries.find(l=>l.name===cw))ws.value=cw;
+}
+
+// ══════════════════════════════════════════════════════
+//  CONTRACT TRANSFER
+// ══════════════════════════════════════════════════════
+let transferEntryIdx = null;
+
+function openTransferModal(entryIdx){
+  if(!isPM()) return;
+  const e = projectEntries[entryIdx];
+  if(!e){ showToast('Entry not found','error'); return; }
+  transferEntryIdx = entryIdx;
+
+  // Calculate remaining balance
+  const eKey        = projectKey(e);
+  const totalClaimed = getClaimedMapAll()[eKey] || 0;
+  const retentionSum = getRetentionMap()[eKey]  || 0;
+  const remaining   = parseFloat((e.contract - totalClaimed).toFixed(2));
+
+  // Fill summary
+  document.getElementById('transfer-from-summary').innerHTML = `
+    <strong>${e.project}</strong> — ${e.scope} / ${e.worktype} / ${e.houseno||'—'}<br>
+    Original Worker: <strong>${e.worker||'—'}</strong> &nbsp;|&nbsp; Engineer: <strong>${e.engineer||'—'}</strong><br>
+    Contract: <strong>$ ${fmt(e.contract)}</strong> &nbsp;|&nbsp;
+    Claimed: <span class="color-orange fw-600">$ ${fmt(totalClaimed)}</span> &nbsp;|&nbsp;
+    Retention Held: <span class="color-purple fw-600">$ ${fmt(retentionSum)}</span> &nbsp;|&nbsp;
+    Remaining: <span class="${remaining>=0?'color-green':'color-red'} fw-600">$ ${fmt(remaining)}</span>
+  `;
+
+  // Pre-fill transfer amount with remaining balance
+  document.getElementById('transfer-amount').value = remaining > 0 ? remaining : '';
+  document.getElementById('transfer-date').value   = new Date().toISOString().slice(0,10);
+  document.getElementById('transfer-notes').value  = '';
+  document.getElementById('transfer-preview').style.display = 'none';
+
+  // Populate worker dropdown (exclude current worker)
+  const workerSel = document.getElementById('transfer-to-worker');
+  workerSel.innerHTML = '<option value="">-- Select New Worker --</option>' +
+    laborEntries.filter(l=>s(l.name)!==s(e.worker))
+      .map(l=>`<option value="${l.name}">${l.name}</option>`).join('');
+
+  // Populate engineer dropdown
+  const engSel = document.getElementById('transfer-to-engineer');
+  engSel.innerHTML = '<option value="">-- Select Engineer --</option>' +
+    engineers.map(eng=>`<option value="${eng.name}" ${s(eng.name)===s(e.engineer)?'selected':''}>${eng.name}</option>`).join('');
+
+  // Live preview on input change
+  ['transfer-to-worker','transfer-to-engineer','transfer-amount'].forEach(id=>{
+    document.getElementById(id).onchange = updateTransferPreview;
+    document.getElementById(id).oninput  = updateTransferPreview;
+  });
+
+  document.getElementById('transferModal').classList.add('open');
+  updateTransferPreview();
+}
+
+function updateTransferPreview(){
+  const e       = projectEntries[transferEntryIdx];
+  if(!e) return;
+  const toWorker  = document.getElementById('transfer-to-worker').value;
+  const toEngineer= document.getElementById('transfer-to-engineer').value;
+  const amount    = parseFloat(document.getElementById('transfer-amount').value)||0;
+  const preview   = document.getElementById('transfer-preview');
+
+  if(!toWorker||!amount){
+    preview.style.display = 'none';
+    return;
+  }
+
+  preview.style.display = 'block';
+  const eKey2        = projectKey(e);
+  const retHeld      = getRetentionMap()[eKey2]||0;
+  preview.innerHTML = `
+    <strong>✅ Transfer Preview</strong><br>
+    New entry will be created:<br>
+    &nbsp;• Project: <strong>${e.project}</strong> — ${e.scope} / ${e.worktype} / ${e.houseno||'—'}<br>
+    &nbsp;• New Worker: <strong>${toWorker}</strong> &nbsp;|&nbsp; Engineer: <strong>${toEngineer||e.engineer||'—'}</strong><br>
+    &nbsp;• New Contract Amount: <strong>$ ${fmt(amount)}</strong><br>
+    &nbsp;• Retention %: <strong>${e.retention||0}%</strong> (same as original)<br><br>
+    <strong style="color:#7a5c00">Retention Transfer:</strong><br>
+    &nbsp;• All approved/paid records for <strong>${e.worker||'original worker'}</strong> reassigned to <strong>${toWorker}</strong><br>
+    &nbsp;• Retention held <strong>($ ${fmt(retHeld)})</strong> moves to ${toWorker} — original worker loses retention claim rights<br><br>
+    Original contract for <strong>${e.worker}</strong> reduced to
+    <strong>$ ${fmt(parseFloat(e.contract)-amount)}</strong> (claimed amount only, $0 remaining).
+  `;
+}
+
+async function confirmTransfer(){
+  if(!isPM()||transferEntryIdx===null) return;
+  const e         = projectEntries[transferEntryIdx];
+  const toWorker  = document.getElementById('transfer-to-worker').value;
+  const toEngineer= document.getElementById('transfer-to-engineer').value;
+  const amount    = parseFloat(document.getElementById('transfer-amount').value)||0;
+  const date      = document.getElementById('transfer-date').value;
+  const notes     = document.getElementById('transfer-notes').value.trim();
+
+  if(!toWorker)  { showToast('Select new worker','error'); return; }
+  if(amount<=0)  { showToast('Enter transfer amount','error'); return; }
+
+  const btn = document.getElementById('btn-confirm-transfer');
+  btn.disabled=true; btn.textContent='Transferring…';
+
+  try{
+    const res = await api({
+      action        : 'transferContract',
+      entryIdx      : transferEntryIdx,
+      toWorker,
+      toEngineer    : toEngineer||e.engineer||'',
+      transferAmount: amount,
+      date, notes,
+      originalEntry : e
+    });
+    if(!res.ok) throw new Error(res.error);
+
+    // Update in-memory: reduce original contract to what was actually claimed
+    projectEntries[transferEntryIdx].contract =
+      parseFloat((e.contract - amount).toFixed(2));
+
+    // Reassign payment records in memory — approved/paid go to new worker
+    const origWorkerName = s(e.worker);
+    Object.values(paymentRequests).forEach(reqs=>(reqs||[]).forEach(r=>{
+      if(s(r.worker)!==origWorkerName) return;
+      if(r.status!=='approved'&&r.status!=='paid') return;
+      if(s(r.project)!==s(e.project)||s(r.scope)!==s(e.scope)||
+         s(r.worktype)!==s(e.worktype)||s(r.houseno||'')!==s(e.houseno||'')) return;
+      r.worker   = toWorker;
+      r.engineer = toEngineer||e.engineer||r.engineer;
+    }));
+
+    // Add new project entry for new worker
+    projectEntries.push({
+      project  : e.project,
+      scope    : e.scope,
+      worktype : e.worktype,
+      houseno  : e.houseno,
+      contract : amount,
+      retention: e.retention,
+      engineer : toEngineer||e.engineer||'',
+      worker   : toWorker,
+      rowId    : res.newRowId,
+      note     : notes
+    });
+
+    invalidateMaps();
+    closeModal('transferModal');
+    renderPMTable();
+    refreshPMDropdowns();
+    renderLMTable();
+    const msg = res.reassignedRows > 0
+      ? `✅ Transferred to ${toWorker}! ${res.reassignedRows} payment record(s) + retention reassigned.`
+      : `✅ Contract transferred to ${toWorker}!`;
+    showToast(msg,'success');
+  }catch(err){
+    showToast('Transfer failed: '+err.message,'error');
+  }finally{
+    btn.disabled=false; btn.textContent='✅ Confirm Transfer';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  APPROVAL SUMMARY (AP) SYSTEM
+// ══════════════════════════════════════════════════════
+let currentApId = null; // for the detail modal
+
+// ── Create a new AP from all approved (non-AP'd) requests ─────────────────
+async function createApproval(){
+  if(!isPM()) return;
+
+  // Collect all approved requests that haven't been added to an AP yet
+  const alreadyInAP = new Set(
+    approvals.flatMap(a=>(a.items||[]).map(i=>i.rowId))
+  );
+  const items = [];
+  engineers.forEach((eng,i)=>{
+    (paymentRequests[i]||[]).forEach(r=>{
+      if(r.status!=='approved') return;
+      if(alreadyInAP.has(r.rowId)) return;
+      if(!r.worker) return;
+      items.push({
+        rowId       : r.rowId,
+        engineerName: eng.name,
+        worker      : r.worker,
+        project     : r.project,
+        scope       : r.scope,
+        worktype    : r.worktype,
+        houseno     : r.houseno||'',
+        amount      : r.amount,
+        retention   : r.retention,
+        materialCut : r.materialCut||0,
+        netPay      : r.netPay!==null&&r.netPay!==undefined ? r.netPay : r.amtToPay
+      });
+    });
+  });
+
+  if(!items.length){
+    showToast('No new approved requests to include in an AP.','error'); return;
+  }
+
+  const confirmed = confirm(
+    `Create an Approval Summary (AP) with ${items.length} item(s)?
+` +
+    `Total Net Pay: $ ${fmt(items.reduce((t,i)=>t+i.netPay,0))}`
+  );
+  if(!confirmed) return;
+
+  try{
+    const res = await apiPost({action:'createApproval', createdBy:currentUser, items});
+    if(!res.ok) throw new Error(res.error);
+    approvals.unshift({
+      apId       : res.apId,
+      apNumber   : res.apNumber,
+      createdDate: res.createdDate,
+      createdBy  : currentUser,
+      status     : 'to_be_paid',
+      totalAmount: items.reduce((t,i)=>t+i.netPay,0),
+      items
+    });
+    renderAPList();
+    showToast(`${res.apNumber} created with ${items.length} item(s)!`);
+    showPage('labor-master');
+  }catch(e){
+    showToast('Failed to create AP: '+e.message,'error');
+  }
+}
+
+// ── Render AP list in Labor Master ────────────────────────────────────────
+function renderAPList(){
+  const tbody = document.getElementById('ap-list-body');
+  if(!tbody) return;
+  if(!approvals.length){
+    tbody.innerHTML='<tr><td colspan="7"><div class="empty"><div class="empty-icon">📑</div>No approval summaries yet.</div></td></tr>';
+    return;
+  }
+  const pm = isPM();
+  tbody.innerHTML = approvals.map((ap,i)=>{
+    const statusBadge = ap.status==='paid'
+      ?`<span class="badge badge-approved">✅ Paid</span>`
+      :`<span class="badge badge-review">⏳ To Be Paid</span>`;
+    return `<tr>
+      <td>${i+1}</td>
+      <td class="fw-600" style="color:var(--accent2)">${ap.apNumber}</td>
+      <td>${ap.createdDate}</td>
+      <td>${ap.createdBy||'—'}</td>
+      <td class="td-paid color-green fw-600">$ ${fmt(ap.totalAmount)}</td>
+      <td>${statusBadge}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="openApDetail('${ap.apId}')">📋 View Detail</button>
+      ${pm&&ap.status==='to_be_paid'?`<button class="btn btn-green btn-sm" onclick="currentApId='${ap.apId}';markApPaid()" style="margin-left:4px">✅ Mark Paid</button>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Open AP detail modal ──────────────────────────────────────────────────
+function openApDetail(apId){
+  const ap = approvals.find(a=>a.apId===apId);
+  if(!ap) return;
+  currentApId = apId;
+  const pm = isPM();
+  document.getElementById('ap-modal-title').textContent = `📑 ${ap.apNumber}`;
+  document.getElementById('ap-modal-meta').textContent =
+    `Created: ${ap.createdDate} by ${ap.createdBy||'—'}`;
+  document.getElementById('ap-modal-total').textContent = `$ ${fmt(ap.totalAmount)}`;
+  document.getElementById('ap-modal-count').textContent = (ap.items||[]).length;
+  const badge = document.getElementById('ap-modal-status-badge');
+  badge.textContent = ap.status==='paid' ? '✅ Paid' : '⏳ To Be Paid';
+  badge.className = 'badge '+(ap.status==='paid'?'badge-approved':'badge-review');
+  const markBtn = document.getElementById('btn-mark-ap-paid');
+  if(markBtn) markBtn.style.display = (pm&&ap.status==='to_be_paid') ? '' : 'none';
+  const items = ap.items||[];
+  const tbody = document.getElementById('ap-modal-items');
+  if(!items.length){
+    tbody.innerHTML='<tr><td colspan="10"><div class="empty">No items.</div></td></tr>';
+  } else {
+    let rowNum=0;
+    tbody.innerHTML = items.map(it=>{
+      rowNum++;
+      return `<tr>
+        <td>${rowNum}</td>
+        <td class="fw-600">${it.worker||'—'}</td>
+        <td>${it.project}</td><td>${it.scope}</td><td>${it.worktype}</td><td>${it.houseno||'—'}</td>
+        <td class="color-orange fw-600">$ ${fmt(it.amount)}</td>
+        <td class="color-purple fw-600">$ ${fmt(it.retention)}</td>
+        <td style="color:#7a3a00;font-weight:600">$ ${fmt(it.materialCut||0)}</td>
+        <td class="td-paid color-green fw-600">$ ${fmt(it.netPay)}</td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('apDetailModal').classList.add('open');
+}
+
+// ── Mark all items in an AP as paid ──────────────────────────────────────
+async function markApPaid(){
+  if(!isPM()||!currentApId) return;
+  const ap = approvals.find(a=>a.apId===currentApId);
+  if(!ap||ap.status==='paid') return;
+  if(!confirm(`Mark ${ap.apNumber} as Paid?
+This will update all ${(ap.items||[]).length} payment items to "paid" status.`)) return;
+  const btn = document.getElementById('btn-mark-ap-paid');
+  if(btn){ btn.disabled=true; btn.textContent='Marking…'; }
+  try{
+    const res = await api({action:'markApPaid', apId:currentApId});
+    if(!res.ok) throw new Error(res.error);
+    ap.status = 'paid';
+    // Update all payment requests in memory to 'paid'
+    const rowIds = new Set((ap.items||[]).map(i=>i.rowId));
+    engineers.forEach((_,i)=>{
+      (paymentRequests[i]||[]).forEach(r=>{
+        if(rowIds.has(r.rowId)) r.status='paid';
+      });
+    });
+    invalidateMaps();
+    renderAPList();
+    renderLMTable();
+    renderPMTable();
+    closeModal('apDetailModal');
+    showToast(`${ap.apNumber} marked as Paid! Labor Master updated.`,'success');
+  }catch(e){
+    showToast('Failed: '+e.message,'error');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='✅ Mark All Paid'; }
+  }
+}
+
+// ── Render AP list in Labor Portal (for labor user) ───────────────────────
+function renderLaborApList(){
+  const tbody = document.getElementById('lp-ap-body');
+  if(!tbody||!currentLaborName) return;
+  // Find APs that contain this labor worker
+  const myAPs = approvals.filter(ap=>
+    (ap.items||[]).some(it=>s(it.worker)===s(currentLaborName))
+  );
+  if(!myAPs.length){
+    tbody.innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-icon">📑</div>No AP summaries yet.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = myAPs.map((ap,i)=>{
+    const myNet = (ap.items||[])
+      .filter(it=>s(it.worker)===s(currentLaborName))
+      .reduce((t,it)=>t+it.netPay,0);
+    const statusBadge = ap.status==='paid'
+      ?`<span class="badge badge-approved">✅ Paid</span>`
+      :`<span class="badge badge-review">⏳ To Be Paid</span>`;
+    return `<tr>
+      <td>${i+1}</td>
+      <td class="fw-600" style="color:var(--accent2)">${ap.apNumber}</td>
+      <td>${ap.createdDate}</td>
+      <td class="td-paid color-green fw-600">$ ${fmt(myNet)}</td>
+      <td>${statusBadge}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="openApDetail('${ap.apId}')">📋 View</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  PAGE: FINANCE
+// ══════════════════════════════════════════════════════
+function getNextPaymentDate(){
+  const now=new Date();
+  const y=now.getFullYear(), m=now.getMonth();
+  const mid=new Date(y,m,15), end=new Date(y,m+1,0);
+  if(now<=mid) return {label:'Mid-month (15th)', date:mid.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+  if(now<=end) return {label:'End of month', date:end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+  // next month mid
+  const nm=new Date(y,m+1,15);
+  return {label:'Mid-month (15th)', date:nm.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})};
+}
+
+function renderFinancePage(){
+  const tbody=document.getElementById('finance-table-body'); if(!tbody) return;
+  const next=getNextPaymentDate();
+  const dateEl=document.getElementById('finance-next-date');
+  if(dateEl) dateEl.textContent=`Next payment: ${next.label} — ${next.date}`;
+
+  // Collect all approved requests
+  const rows=[];
+  engineers.forEach((eng,i)=>{
+    (paymentRequests[i]||[]).forEach(r=>{
+      if(r.status!=='approved') return;
+      if(!r.worker) return; // only requests with a labor worker
+      rows.push({...r, engineerName:eng.name});
+    });
+  });
+
+  let totalPayable=0, totalPaid=0;
+  // Group by worker
+  const byWorker={};
+  rows.forEach(r=>{
+    if(!byWorker[r.worker]) byWorker[r.worker]=[];
+    byWorker[r.worker].push(r);
+  });
+  // Also collect paid amounts per worker
+  const paidByWorker={};
+  engineers.forEach((eng,i)=>{
+    (paymentRequests[i]||[]).forEach(r=>{
+      if(r.status!=='paid'||!r.worker) return;
+      paidByWorker[r.worker]=(paidByWorker[r.worker]||0)+(r.amtToPay||0);
+    });
+  });
+
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="11"><div class="empty"><div class="empty-icon">💼</div>No approved requests pending payment.</div></td></tr>';
+    document.getElementById('fin-total-payable').textContent='$ 0.00';
+    document.getElementById('fin-total-paid').textContent='$ 0.00';
+    document.getElementById('fin-total-outstanding').textContent='$ 0.00';
+    return;
+  }
+
+  let rowNum=0;
+  tbody.innerHTML=rows.map(r=>{
+    rowNum++;
+    totalPayable+=(r.netPay!=null?r.netPay:(r.amtToPay||0));
+    const statusBadge=`<span class="status-select approved">✅ Approved</span>`;
+    return `<tr>
+      <td>${rowNum}</td>
+      <td class="fw-600">${r.worker||'—'}</td>
+      <td>${r.project}</td><td>${r.scope}</td><td>${r.worktype}</td><td>${r.houseno||'—'}</td>
+      <td>${r.date}</td>
+      <td class="fw-600 color-orange">$ ${fmt(r.amount)}</td>
+      <td class="color-purple fw-600">$ ${fmt(r.retention)}</td>
+      <td style="color:#7a3a00;font-weight:600">$ ${fmt(r.materialCut||0)}</td>
+      <td class="td-paid color-green fw-600">$ ${fmt(r.netPay!=null?r.netPay:r.amtToPay)}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+
+  // Totals
+  Object.values(paidByWorker).forEach(v=>totalPaid+=v);
+  const outstanding=totalPayable;
+  document.getElementById('fin-total-payable').textContent=`$ ${fmt(totalPayable)}`;
+  document.getElementById('fin-total-paid').textContent=`$ ${fmt(totalPaid)}`;
+  document.getElementById('fin-total-outstanding').textContent=`$ ${fmt(outstanding)}`;
+}
+
+function downloadFinanceCSV(){
+  const rows=[['#','Labor Name','Project','Scope/Block','Work Type','House No','Request Date',
+    'Request Amt (USD)','Retention (USD)','Material Cut (USD)','Net Pay (USD)']];
+  let n=1;
+  engineers.forEach((eng,i)=>{
+    (paymentRequests[i]||[]).forEach(r=>{
+      if(r.status!=='approved'||!r.worker) return;
+      const amt    = parseFloat(r.amount)||0;
+      const retPct = parseFloat(r.retentionPct)||0;
+      const ret    = parseFloat(r.retention)||0;
+      const calcRet= parseFloat((amt*retPct/100).toFixed(2));
+      const truRet = (ret>amt||ret<0)?calcRet:ret;
+      const atp    = parseFloat((amt-truRet).toFixed(2));
+      const mc     = parseFloat(r.materialCut)||0;
+      const np     = parseFloat((atp-mc).toFixed(2));
+      rows.push([n++,r.worker,r.project,r.scope,r.worktype,r.houseno||'',r.date,amt,truRet,mc,np]);
+    });
+  });
+  downloadCSV(rows,'Finance_Payable_'+new Date().toISOString().slice(0,10)+'.csv');
+  showToast('Downloaded — open with Excel (Khmer text supported)');
+}
+
+// ══════════════════════════════════════════════════════
+//  PAGE: LABOR PORTAL
+// ══════════════════════════════════════════════════════
+function renderLaborPortal(){
+  if(!currentLaborName) return;
+  document.getElementById('labor-portal-title').textContent=`My Payments — ${currentLaborName}`;
+
+  // My project entries
+  const myEntries=projectEntries.map((e,i)=>({...e,idx:i})).filter(e=>s(e.worker)===s(currentLaborName));
+  const totalContract=myEntries.reduce((t,e)=>t+e.contract,0);
+
+  // My payment requests (all engineers)
+  const myReqs=[];
+  Object.values(paymentRequests).forEach(reqs=>(reqs||[]).forEach(r=>{
+    if(s(r.worker)===s(currentLaborName)) myReqs.push(r);
+  }));
+  // Use netPay (amount - retention - material cut) for all calculations
+  const netOf   = r => (r.netPay!==undefined&&r.netPay!==null) ? r.netPay : (r.amtToPay||0);
+  const toBePaid=myReqs.filter(r=>r.status==='approved').reduce((t,r)=>t+netOf(r),0);
+  const paid    =myReqs.filter(r=>r.status==='paid')    .reduce((t,r)=>t+netOf(r),0);
+  const balance =totalContract-toBePaid-paid;
+
+  // Update summary cards
+  document.getElementById('lp-contract').textContent =`$ ${fmt(totalContract)}`;
+  document.getElementById('lp-tobepaid').textContent =`$ ${fmt(toBePaid)}`;
+  document.getElementById('lp-paid').textContent     =`$ ${fmt(paid)}`;
+  document.getElementById('lp-balance').textContent  =`$ ${fmt(balance)}`;
+  document.getElementById('lp-balance').style.color  = balance>=0?'var(--accent3)':'var(--danger)';
+
+  // Assignments table
+  const assignTbody=document.getElementById('lp-assignments-body');
+  if(myEntries.length){
+    assignTbody.innerHTML=myEntries.map((e,n)=>{
+      // projectKey now includes worker — correctly isolates this worker's claims
+      const claimed=getClaimedMapAll()[projectKey(e)]||0;
+      const rem=e.contract-claimed;
+      return `<tr>
+        <td>${n+1}</td><td class="fw-600">${e.project}</td><td>${e.scope}</td>
+        <td>${e.worktype}</td><td>${e.houseno||'—'}</td>
+        <td class="fw-600">$ ${fmt(e.contract)}</td>
+        <td class="color-orange fw-600">$ ${fmt(claimed)}</td>
+        <td class="${rem>=0?'color-green':'color-red'} fw-600">$ ${fmt(rem)}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    assignTbody.innerHTML='<tr><td colspan="8"><div class="empty"><div class="empty-icon">📋</div>No assignments found.</div></td></tr>';
+  }
+
+  // AP summaries
+  renderLaborApList();
+
+  // Payment history table
+  const histTbody=document.getElementById('lp-requests-body');
+  if(myReqs.length){
+    const statusLabel={review:'🔍 Review',approved:'✅ Approved',rejected:'❌ Rejected',paid:'💵 Paid'};
+    histTbody.innerHTML=myReqs.map((r,n)=>`<tr>
+      <td>${n+1}</td><td>${r.date}</td><td class="fw-600">${r.project}</td>
+      <td>${r.scope}</td><td>${r.worktype}</td><td>${r.houseno||'—'}</td>
+      <td class="fw-600 color-orange">$ ${fmt(r.amount)}</td>
+      <td class="td-retention color-purple fw-600">$ ${fmt(r.retention)}</td>
+      <td style="color:#7a3a00;font-weight:600">$ ${fmt(r.materialCut||0)}</td>
+      <td class="td-paid fw-600" style="color:var(--accent3)">$ ${fmt(r.netPay!=null?r.netPay:r.amtToPay)}</td>
+      <td><span class="status-select ${r.status}">${statusLabel[r.status]||r.status}</span></td>
+    </tr>`).join('');
+  } else {
+    histTbody.innerHTML='<tr><td colspan="10"><div class="empty"><div class="empty-icon">📭</div>No payment requests yet.</div></td></tr>';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  PHOTO UPLOAD — FORM POST + POLL
+//  Strategy (CORS-safe from local HTML file):
+//  1. Resize image to 800px JPEG client-side
+//  2. Submit base64 via hidden <form> POST to Apps Script
+//     (form POST ignores CORS — browser allows it)
+//  3. Apps Script saves to Drive, stores result in CacheService
+//  4. Poll Apps Script via GET every 2s until result is ready
+//  5. Return viewUrl + thumbUrl
+// ══════════════════════════════════════════════════════
+const MAX_PHOTOS  = 6;
+const MAX_FILE_MB = 5;
+
+// ── Resize image to JPEG base64 ───────────────────────
+function resizePhoto(file, maxPx=800, quality=0.75){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width, h=img.height;
+        if(w>maxPx||h>maxPx){ const r=Math.min(maxPx/w,maxPx/h); w=Math.round(w*r); h=Math.round(h*r); }
+        const c=document.createElement('canvas');
+        c.width=w; c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(c.toDataURL('image/jpeg',quality).split(',')[1]);
+      };
+      img.onerror=()=>reject(new Error('Cannot load image'));
+      img.src=e.target.result;
+    };
+    reader.onerror=()=>reject(new Error('Cannot read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Upload via hidden form POST then poll for result ──
+function uploadPhotoChunked(base64, fileName, subFolder){
+  return new Promise((resolve, reject)=>{
+    const uploadId = 'up_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+
+    // Build hidden iframe (receives the form response silently)
+    let iframe = document.getElementById('_upload_iframe');
+    if(!iframe){
+      iframe = document.createElement('iframe');
+      iframe.id   = '_upload_iframe';
+      iframe.name = '_upload_iframe';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+
+    // Build hidden form with base64 + metadata as a JSON payload
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = API_URL;
+    form.target = '_upload_iframe';
+    form.style.display = 'none';
+
+    const input = document.createElement('input');
+    input.type  = 'hidden';
+    input.name  = 'payload';
+    input.value = JSON.stringify({
+      action: 'uploadPhotoPost',
+      uploadId, base64, fileName, subFolder
+    });
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+    // Poll every 2 seconds for the result (max 60s)
+    let attempts = 0;
+    const maxAttempts = 30;
+    const poll = setInterval(async ()=>{
+      attempts++;
+      if(attempts > maxAttempts){
+        clearInterval(poll);
+        reject(new Error('Upload timed out after 60s'));
+        return;
+      }
+      try{
+        const res = await api({action:'getUploadResult', tempId: uploadId});
+        if(res.ok && res.ready){
+          clearInterval(poll);
+          if(res.error) reject(new Error(res.error));
+          else resolve({viewUrl: res.viewUrl, thumbUrl: res.thumbUrl});
+        }
+        // not ready yet — keep polling
+      }catch(e){ /* network blip — keep polling */ }
+    }, 2000);
+  });
+}
+
+// ── Photo picker handler ──────────────────────────────
+async function onPhotoPicked(event){
+  const files=[...event.target.files];
+  event.target.value='';
+  for(const file of files){
+    if(pendingPhotos.length>=MAX_PHOTOS){ showToast(`Max ${MAX_PHOTOS} photos.`,'error'); break; }
+    if(file.size>MAX_FILE_MB*1024*1024){ showToast(`"${file.name}" exceeds ${MAX_FILE_MB}MB — skipped.`,'error'); continue; }
+    if(!file.type.startsWith('image/')){ showToast(`"${file.name}" is not an image — skipped.`,'error'); continue; }
+    // Show preview immediately (local dataUrl)
+    const dataUrl=await new Promise((res,rej)=>{
+      const r=new FileReader(); r.onload=e=>res(e.target.result); r.onerror=rej; r.readAsDataURL(file);
+    });
+    pendingPhotos.push({dataUrl, name:file.name, file, uploaded:false, driveUrl:null, thumbUrl:null});
+    renderPhotoGrid();
+  }
+}
+
+// ── Render thumbnail grid ─────────────────────────────
+function renderPhotoGrid(){
+  const grid=document.getElementById('pr-photo-grid');
+  const countEl=document.getElementById('pr-photo-count');
+  if(!grid) return;
+  const atMax=pendingPhotos.length>=MAX_PHOTOS;
+  countEl.textContent=`${pendingPhotos.length} / ${MAX_PHOTOS}`;
+  grid.innerHTML=pendingPhotos.map((p,i)=>`
+    <div class="photo-thumb" onclick="previewPending(${i})" title="${p.name}">
+      <img src="${p.thumbUrl||p.dataUrl}" alt="${p.name}">
+      ${p.uploaded?'<span style="position:absolute;bottom:3px;left:3px;background:var(--accent3);color:#fff;border-radius:4px;font-size:.65rem;padding:1px 5px">✓ Saved</span>':''}
+      <button class="photo-thumb-del" onclick="event.stopPropagation();removePending(${i})" title="Remove">✕</button>
+    </div>`).join('')
+  +(atMax?'':
+    `<div class="photo-add-btn" onclick="document.getElementById('pr-photo-input').click()">
+       <span style="font-size:1.5rem">➕</span><span>Add Photo</span>
+     </div>`);
+}
+
+function removePending(i){
+  pendingPhotos.splice(i,1);
+  renderPhotoGrid();
+}
+
+function previewPending(i){
+  const photos=pendingPhotos.map(p=>({src:p.thumbUrl||p.dataUrl, driveUrl:p.driveUrl}));
+  openPhotoViewer(photos,'Pending Photos',i);
+}
+
+function clearPendingPhotos(){
+  pendingPhotos=[];
+  renderPhotoGrid();
+}
+
+// ── Photo viewer modal ────────────────────────────────
+function openPhotoViewer(photos, title, startIdx=0){
+  viewerPhotos=photos; viewerIdx=startIdx;
+  document.getElementById('photo-modal-title').textContent='📷 '+title;
+  renderViewer();
+  document.getElementById('photoModal').classList.add('open');
+}
+
+function renderViewer(){
+  const p   = viewerPhotos[viewerIdx];
+  const img = document.getElementById('photo-main');
+  const ph  = document.getElementById('photo-main-placeholder');
+  const driveBtn = document.getElementById('btn-open-drive');
+
+  // p.src can be a Drive thumbnail URL, a local dataUrl, or a Drive view URL
+  const mainSrc = p.src || p.thumbUrl || p.dataUrl || '';
+  if(mainSrc){
+    img.src = mainSrc;
+    img.style.display = 'block';
+    ph.style.display  = 'none';
+    // If it's a Drive URL (not a data: URL), add error fallback link
+    img.onerror = p.driveUrl ? ()=>{
+      img.style.display='none';
+      ph.innerHTML=`<span style="color:#aaa">Could not load thumbnail.<br>
+        <a href="${p.driveUrl}" target="_blank" style="color:var(--gold)">🔗 Open in Google Drive</a></span>`;
+      ph.style.display='block';
+    } : null;
+  } else {
+    img.style.display = 'none';
+    ph.style.display  = 'block';
+    ph.textContent    = 'No preview available';
+  }
+  driveBtn.style.display = p.driveUrl ? 'inline-flex' : 'none';
+  document.getElementById('photo-counter').textContent = `Photo ${viewerIdx+1} of ${viewerPhotos.length}`;
+  // Thumbnails
+  const strip = document.getElementById('photo-thumb-strip');
+  strip.innerHTML = viewerPhotos.map((ph2,i)=>{
+    const tSrc = ph2.src||ph2.thumbUrl||ph2.dataUrl||'';
+    return `<div class="photo-viewer-thumb${i===viewerIdx?' active':''}" onclick="selectViewer(${i})" title="Photo ${i+1}">
+      ${tSrc
+        ? `<img src="${tSrc}" alt="Photo ${i+1}">`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#999">${i+1}</div>`}
+    </div>`;
+  }).join('');
+}
+
+function selectViewer(i){ viewerIdx=i; renderViewer(); }
+function navPhoto(dir){
+  const next=viewerIdx+dir;
+  if(next>=0&&next<viewerPhotos.length){ viewerIdx=next; renderViewer(); }
+}
+function openPhotoInDrive(){
+  const p=viewerPhotos[viewerIdx];
+  if(p&&p.driveUrl) window.open(p.driveUrl,'_blank');
+}
+
+// ── View photos for a saved request ──────────────────
+function viewRequestPhotos(engIdx, reqIdx){
+  const reqs = paymentRequests[parseInt(engIdx)]||[];
+  const req  = typeof reqIdx === 'number' ? reqs[reqIdx] : reqs.find(r=>r.rowId===reqIdx);
+  if(!req||!req.photos||!req.photos.length){ showToast('No photos attached.','error'); return; }
+  // Use Google Drive thumbnail URL as src (loads fast); driveUrl opens full size
+  const photos = req.photos.map(p=>({
+    src      : p.thumbUrl || p.viewUrl,
+    driveUrl : p.viewUrl
+  }));
+  openPhotoViewer(photos, `${req.project} / ${req.scope} — ${req.date}`, 0);
+}
+
+// ══════════════════════════════════════════════════════
+//  START
+// ══════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
